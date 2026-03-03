@@ -1,98 +1,97 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>EV Cable Measure Tool</title>
+    <title>EV Cable Path Tracker</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body { margin: 0; text-align: center; background: #000; color: white; font-family: sans-serif; overflow: hidden; }
         #camera-container { position: relative; width: 100vw; height: 100vh; }
         video { width: 100%; height: 100%; object-fit: cover; }
-        #crosshair { position: absolute; top: 50%; left: 50%; width: 40px; height: 40px; transform: translate(-50%, -50%); pointer-events: none; }
-        .line-h { position: absolute; top: 19px; width: 100%; height: 2px; background: #3498db; }
-        .line-v { position: absolute; left: 19px; height: 100%; width: 2px; background: #3498db; }
-        #status { padding: 15px; background: rgba(0,0,0,0.8); position: fixed; top: 0; width: 100%; z-index: 10; font-size: 16px; color: #3498db; }
-        #ui { position: fixed; bottom: 30px; width: 100%; z-index: 10; display: flex; flex-direction: column; align-items: center; }
-        button { padding: 20px; width: 85%; font-size: 20px; font-weight: bold; border-radius: 50px; border: none; background: #3498db; color: white; cursor: pointer; }
-        #angle-info { font-size: 12px; color: #bdc3c7; margin-top: 5px; }
+        #crosshair { position: absolute; top: 50%; left: 50%; width: 30px; height: 30px; transform: translate(-50%, -50%); pointer-events: none; border: 2px solid #e74c3c; border-radius: 50%; }
+        #status { padding: 15px; background: rgba(0,0,0,0.8); position: fixed; top: 0; width: 100%; z-index: 10; border-bottom: 2px solid #e74c3c; }
+        #total-display { font-size: 24px; color: #2ecc71; font-weight: bold; }
+        #ui { position: fixed; bottom: 30px; width: 100%; z-index: 10; display: flex; flex-direction: column; align-items: center; gap: 15px; }
+        .btn { padding: 20px; width: 85%; font-size: 18px; font-weight: bold; border-radius: 12px; border: none; cursor: pointer; }
+        #addBtn { background: #3498db; color: white; }
+        #finishBtn { background: #2ecc71; color: white; }
     </style>
 </head>
 <body>
 
-    <div id="status">STEP 1: AIM AT CHARGER LOCATION</div>
+    <div id="status">
+        TOTAL PATH: <span id="total-display">0.00</span>m<br>
+        <small id="instruction">Aim at the START and click 'Add Segment'</small>
+    </div>
 
     <div id="camera-container">
         <video id="webcam" autoplay playsinline></video>
-        <div id="crosshair"><div class="line-h"></div><div class="line-v"></div></div>
+        <div id="crosshair"></div>
     </div>
 
     <div id="ui">
-        <button id="mainBtn">SET POINT A (CHARGER)</button>
-        <div id="angle-info">Tilt: <span id="tiltVal">0</span>° | Rot: <span id="rotVal">0</span>°</div>
+        <button id="addBtn" class="btn">ADD SEGMENT POINT</button>
+        <button id="finishBtn" class="btn">FINISH & SAVE TO SHEET</button>
     </div>
 
     <script>
         const video = document.getElementById('webcam');
-        const btn = document.getElementById('mainBtn');
-        const status = document.getElementById('status');
+        const totalDisplay = document.getElementById('total-display');
+        const instruction = document.getElementById('instruction');
         
-        let cameraHeight = 1.5; // Update this to your eye-level height in meters
-        let points = [];
+        let cameraHeight = 1.5; // Update to your eye-level height
+        let totalPathLength = 0;
+        let lastPoint = null;
         let currentTilt = 0;
         let currentRotation = 0;
 
         navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(s => video.srcObject = s);
 
         window.addEventListener('deviceorientation', (e) => {
-            currentTilt = e.beta; // Pitch
-            currentRotation = e.alpha; // Compass heading
-            document.getElementById('tiltVal').innerText = Math.round(currentTilt);
-            document.getElementById('rotVal').innerText = Math.round(currentRotation);
+            currentTilt = e.beta;
+            currentRotation = e.alpha;
         }, true);
 
-        btn.onclick = () => {
-            // Calculate distance from YOU to the floor point
+        document.getElementById('addBtn').onclick = () => {
             let angleRad = currentTilt * (Math.PI / 180);
             let distToPoint = Math.abs(cameraHeight * Math.tan(angleRad));
+            let newPoint = { d: distToPoint, r: currentRotation };
 
-            points.push({ d: distToPoint, r: currentRotation });
-
-            if (points.length === 1) {
-                status.innerText = "STEP 2: AIM AT METER BOX";
-                btn.innerText = "SET POINT B (METER)";
-                btn.style.background = "#e67e22";
+            if (lastPoint) {
+                // Calculate distance from previous point to this point
+                let angleDiff = Math.abs(lastPoint.r - newPoint.r) * (Math.PI / 180);
+                let segmentLength = Math.sqrt(Math.pow(lastPoint.d, 2) + Math.pow(newPoint.d, 2) - 2 * lastPoint.d * newPoint.d * Math.cos(angleDiff));
+                
+                totalPathLength += segmentLength;
+                totalDisplay.innerText = totalPathLength.toFixed(2);
+                instruction.innerText = "Point added! Move to the next turn and click Add.";
             } else {
-                calculateFinalCable();
+                instruction.innerText = "Start point set. Now aim at the first turn.";
             }
+            lastPoint = newPoint;
         };
 
-        function calculateFinalCable() {
-            let p1 = points[0];
-            let p2 = points[1];
-
-            // Law of Cosines to find distance between two points using rotation difference
-            let angleDiff = Math.abs(p1.r - p2.r) * (Math.PI / 180);
-            let cableLength = Math.sqrt(Math.pow(p1.d, 2) + Math.pow(p2.d, 2) - 2 * p1.d * p2.d * Math.cos(angleDiff));
-
-            // Add 10% safety margin for cable bends/routing
-            let finalLength = (cableLength * 1.1).toFixed(2);
-
-            alert(`Required Cable: ${finalLength} meters (includes 10% slack)`);
-            sendToServer(finalLength);
-
-            // Reset
-            points = [];
-            status.innerText = "STEP 1: AIM AT CHARGER LOCATION";
-            btn.innerText = "SET POINT A (CHARGER)";
-            btn.style.background = "#3498db";
-        }
+        document.getElementById('finishBtn').onclick = () => {
+            if (totalPathLength === 0) return alert("Add some segments first!");
+            
+            // Adding 15% for vertical drops and routing around studs
+            let finalValue = (totalPathLength * 1.15).toFixed(2);
+            
+            if(confirm(`Total Cable: ${finalValue}m (incl. 15% slack). Save?`)) {
+                sendToServer(finalValue);
+                // Reset
+                totalPathLength = 0;
+                lastPoint = null;
+                totalDisplay.innerText = "0.00";
+            }
+        };
 
         function sendToServer(val) {
             const scriptURL = 'https://script.google.com/macros/s/AKfycbwLI_UP4Zjn2WoKhojrOYKMkAQx7ximSuo1iJY2m9UhEZVe007qa5PUE3iRTVGFxWtp/exec'; 
             fetch(scriptURL, {
                 method: 'POST',
                 mode: 'no-cors',
-                body: JSON.stringify({ clientId: "EV_Install_Job", measurement: val })
-            }).then(() => alert("Saved to Google Sheets."));
+                body: JSON.stringify({ clientId: "EV_Path_Install", measurement: val })
+            }).then(() => alert("Data sent to Google Sheets!"));
         }
     </script>
 </body>
