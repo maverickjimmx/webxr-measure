@@ -1,138 +1,449 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>EV Installation Estimator</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Boss EV - EV Pro Tracker v1</title>
     <style>
-        body { margin: 0; text-align: center; background: #1a1a1a; color: white; font-family: sans-serif; overflow: hidden; }
-        #camera-container { position: relative; width: 100vw; height: 100vh; }
+        :root {
+            --primary: #3498db;
+            --success: #2ecc71;
+            --warning: #f1c40f;
+            --danger: #e74c3c;
+            --purple: #9b59b6;
+            --dark: #1a1a1a;
+            --light: #f4f4f4;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { 
+            margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--dark); color: white; height: 100vh; overflow: hidden;
+            display: flex; flex-direction: column;
+        }
+
+        /* Header & Inputs */
+        #header-panel {
+            background: rgba(0,0,0,0.9); padding: 10px; border-bottom: 2px solid var(--primary);
+            z-index: 100; flex-shrink: 0;
+        }
+        .input-group { display: flex; gap: 8px; margin-bottom: 8px; }
+        input, select {
+            flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #444;
+            background: #222; color: white; font-size: 14px; outline: none;
+        }
+        input:focus { border-color: var(--primary); }
+
+        /* Display Panel */
+        #display-panel {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 5px;
+            background: #000; padding: 10px; font-size: 12px; border-radius: 8px;
+        }
+        .big-total {
+            grid-column: span 2; text-align: center; font-size: 32px;
+            color: var(--success); font-weight: 800; margin: 5px 0;
+        }
+        .stat-line { display: flex; justify-content: space-between; border-bottom: 1px solid #222; padding: 2px 0; }
+        .label { color: #888; text-transform: uppercase; font-size: 10px; }
+
+        /* Camera View */
+        #viewport {
+            position: relative; flex-grow: 1; background: #000;
+            display: flex; align-items: center; justify-content: center; overflow: hidden;
+        }
         video { width: 100%; height: 100%; object-fit: cover; }
         
-        #header-ui { position: fixed; top: 0; width: 100%; z-index: 10; background: rgba(0,0,0,0.9); padding: 10px 0; border-bottom: 2px solid #2ecc71; }
-        .setup-row { display: flex; justify-content: center; gap: 10px; margin-bottom: 5px; }
-        input, select { padding: 8px; border-radius: 5px; border: none; font-size: 14px; }
-        
-        #crosshair { position: absolute; top: 50%; left: 50%; width: 40px; height: 40px; transform: translate(-50%, -50%); pointer-events: none; }
-        .ch-line { position: absolute; background: #2ecc71; }
-        .h { top: 19px; width: 100%; height: 2px; }
-        .v { left: 19px; height: 100%; width: 2px; }
+        #crosshair {
+            position: absolute; top: 50%; left: 50%; width: 40px; height: 40px;
+            transform: translate(-50%, -50%); pointer-events: none;
+            border: 2px solid var(--primary); border-radius: 50%;
+        }
+        #crosshair::before { content: ''; position: absolute; top: 19px; left: -10px; width: 60px; height: 2px; background: var(--primary); }
+        #crosshair::after { content: ''; position: absolute; left: 19px; top: -10px; height: 60px; width: 2px; background: var(--primary); }
 
-        #instruction-box { padding: 8px; font-size: 14px; font-weight: bold; transition: 0.3s; }
-        .status-good { background: rgba(46, 204, 113, 0.3); color: #2ecc71; }
-        .status-warn { background: rgba(231, 76, 60, 0.5); color: #ff9f91; }
+        /* Banners & Alerts */
+        #angle-coach {
+            position: absolute; top: 10px; left: 10px; right: 10px;
+            padding: 10px; border-radius: 8px; text-align: center;
+            font-weight: bold; font-size: 14px; z-index: 50;
+            transition: 0.3s;
+        }
+        .status-ok { background: rgba(46, 204, 113, 0.8); color: white; }
+        .status-warn { background: rgba(231, 76, 60, 0.9); color: white; }
         
-        #ui-controls { position: fixed; bottom: 20px; width: 100%; z-index: 10; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-        .btn { padding: 18px; width: 90%; font-size: 18px; font-weight: bold; border-radius: 50px; border: none; cursor: pointer; color: white; }
-        #addBtn { background: #3498db; }
-        #finishBtn { background: #2ecc71; }
-        #resetBtn { background: #444; padding: 10px; width: 40%; font-size: 14px; }
+        #static-banner {
+            position: absolute; top: 60px; left: 50%; transform: translateX(-50%);
+            background: var(--warning); color: black; padding: 4px 12px;
+            border-radius: 20px; font-size: 10px; font-weight: bold;
+            display: none; animation: pulse 1.5s infinite; z-index: 40;
+        }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        /* Bottom Controls */
+        #controls {
+            padding: 15px; background: rgba(0,0,0,0.9); 
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; flex-shrink: 0;
+        }
+        .btn {
+            padding: 18px; border: none; border-radius: 12px; color: white;
+            font-size: 14px; font-weight: bold; cursor: pointer; text-transform: uppercase;
+            display: flex; align-items: center; justify-content: center; min-height: 60px;
+        }
+        .btn:active { transform: scale(0.96); opacity: 0.8; }
+        .btn:disabled { background: #444 !important; opacity: 0.5; cursor: not-allowed; }
+
+        #btn-add { background: var(--primary); grid-column: span 2; font-size: 18px; }
+        #btn-vert { background: var(--purple); }
+        #btn-undo { background: var(--danger); }
+        #btn-send { background: var(--success); grid-column: span 2; margin-top: 5px; }
+
+        /* Overlays */
+        #overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            padding: 20px; z-index: 200; text-align: center;
+        }
+        .modal { background: #222; padding: 25px; border-radius: 15px; width: 100%; max-width: 400px; }
+        
+        #toast {
+            position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+            background: var(--success); color: white; padding: 10px 20px;
+            border-radius: 20px; display: none; z-index: 300;
+        }
     </style>
 </head>
 <body>
 
-    <div id="header-ui">
-        <div class="setup-row">
-            <input type="text" id="job-input" placeholder="Name / Address">
-            <select id="height-input">
-                <option value="1.5">5'0"</option>
-                <option value="1.6" selected>5'3"</option>
-                <option value="1.7">5'7"</option>
-                <option value="1.8">5'11"</option>
-                <option value="1.9">6'3"</option>
-            </select>
+    <div id="header-panel">
+        <div class="input-group">
+            <input type="text" id="job-id" placeholder="Client Name / Job #">
+            <select id="height-sel"></select>
         </div>
-        <div id="instruction-box" class="status-good">Hold phone at Eye Level</div>
-        <div style="font-size: 18px; margin-top:5px;">Est. Cable: <span id="total-val">0.00</span>m</div>
+        <input type="text" id="site-loc" placeholder="Address / Site Location" style="width:100%; margin-bottom: 8px;">
+        
+        <div id="display-panel">
+            <div class="big-total"><span id="val-final">0.00</span>m</div>
+            <div class="stat-line"><span class="label">Floor:</span><span id="val-floor">0.00</span>m</div>
+            <div class="stat-line"><span class="label">Vertical:</span><span id="val-vert">0.00</span>m</div>
+            <div class="stat-line"><span class="label">Buffer (15%):</span><span id="val-buff">0.00</span>m</div>
+            <div class="stat-line"><span class="label">Angle:</span><span id="val-angle">0°</span></div>
+            <div class="stat-line" style="grid-column: span 2; border:none; font-size: 10px; color: #555;">
+                Pts: <span id="cnt-pts">0</span> | Segs: <span id="cnt-segs">0</span> | Verts: <span id="cnt-vadds">0</span>
+            </div>
+        </div>
     </div>
 
-    <div id="camera-container">
+    <div id="viewport">
+        <div id="angle-coach" class="status-ok">Hold phone at Eye Level</div>
+        <div id="static-banner">STATIC MODE ACTIVE – DO NOT MOVE</div>
         <video id="webcam" autoplay playsinline></video>
-        <div id="crosshair"><div class="ch-line h"></div><div class="ch-line v"></div></div>
+        <div id="crosshair"></div>
     </div>
 
-    <div id="ui-controls">
-        <button id="addBtn" class="btn">ADD POINT ON FLOOR</button>
-        <button id="finishBtn" class="btn">SEND ESTIMATE TO US</button>
-        <button id="resetBtn" class="btn">RESTART</button>
+    <div id="controls">
+        <button id="btn-add" class="btn">ADD FLOOR POINT</button>
+        <button id="btn-vert" class="btn">+ ADD 2.5m VERT</button>
+        <button id="btn-undo" class="btn">UNDO LAST</button>
+        <button id="btn-send" class="btn">REVIEW & SEND</button>
     </div>
+
+    <div id="overlay">
+        <div class="modal">
+            <h2 style="color:var(--success)">Review Summary</h2>
+            <div id="modal-content" style="text-align: left; margin: 20px 0; line-height: 1.6;"></div>
+            <div style="display:flex; gap:10px;">
+                <button onclick="closeModal()" class="btn" style="background:#444; flex:1;">Edit</button>
+                <button id="confirm-send" class="btn" style="background:var(--success); flex:2;">Confirm & Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast">Saved Successfully!</div>
 
     <script>
-        const video = document.getElementById('webcam');
-        const totalDisplay = document.getElementById('total-val');
-        const instruction = document.getElementById('instruction-box');
-        const addBtn = document.getElementById('addBtn');
-        
-        let totalPathLength = 0;
-        let lastPoint = null;
-        let currentTilt = 0;
-        let currentRotation = 0;
+        /** CONSTANTS & CONFIG **/
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbznkBTqngel2F66-wWJtVlrZMverQeJdlR1oHHjC1E8vOPdUpKYsWdGlYh_jCS7zrf8Fg/exec'; // Replace with actual URL
+        const DEFAULT_V_RUN = 5.0; // 2 x 2.5m auto-added
+        const BUFFER_PCT = 0.15;
+        const ANGLE_MIN = 15;
+        const ANGLE_MAX = 75;
 
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(s => video.srcObject = s);
+        /** STATE **/
+        let state = {
+            points: [],      // Array of {d: distance_m, a: angle_deg}
+            segments: [],    // Array of segment lengths
+            vAdds: 0,        // Count of manual 2.5m additions
+            pitch: 0,
+            rotation: 0,
+            quality: 'OK',
+            warnings: 0,
+            isLocked: false  // Locked after first point
+        };
 
-        window.addEventListener('deviceorientation', (e) => {
-            currentTilt = e.beta;
-            currentRotation = e.alpha;
-            updateWarning();
-        }, true);
+        const webcam = document.getElementById('webcam');
+        const heightSel = document.getElementById('height-sel');
+        const addBtn = document.getElementById('btn-add');
 
-        function updateWarning() {
-            // Beta angle is usually 0 when vertical, 90 when horizontal.
-            // We want the client between 15 and 70 degrees for accuracy.
-            if (currentTilt < 15) {
-                instruction.innerText = "⚠ TOO FAR: Walk closer to the wall";
-                instruction.className = "status-warn";
-                addBtn.disabled = true;
-                addBtn.style.opacity = "0.5";
-            } else if (currentTilt > 75) {
-                instruction.innerText = "⚠ TOO CLOSE: Step back from the wall";
-                instruction.className = "status-warn";
-                addBtn.disabled = true;
-                addBtn.style.opacity = "0.5";
+        /** INITIALIZATION **/
+        window.addEventListener('load', () => {
+            // Build Height Selector (5'0" to 6'3")
+            for (let ft = 5; ft <= 6; ft++) {
+                let maxIn = (ft === 6) ? 3 : 11;
+                for (let inch = 0; inch <= maxIn; inch++) {
+                    const m = ((ft * 12 + inch) * 0.0254).toFixed(3);
+                    const opt = document.createElement('option');
+                    opt.value = m;
+                    opt.text = `${ft}'${inch}"`;
+                    if (ft === 5 && inch === 8) opt.selected = true;
+                    heightSel.appendChild(opt);
+                }
+            }
+            startCamera();
+            initOrientation();
+        });
+
+        function startCamera() {
+            const constraints = { video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } } };
+            navigator.mediaDevices.getUserMedia(constraints)
+                .then(stream => { webcam.srcObject = stream; })
+                .catch(err => alert("Camera error: " + err));
+        }
+
+        /** SENSORS & ORIENTATION **/
+        function initOrientation() {
+            if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                // iOS Flow
+                document.body.addEventListener('click', () => {
+                    DeviceOrientationEvent.requestPermission()
+                        .then(response => { if (response === 'granted') window.addEventListener('deviceorientation', handleMotion); })
+                        .catch(console.error);
+                }, { once: true });
             } else {
-                instruction.innerText = lastPoint ? "Aim at Meter base and click Add" : "Aim at Charger base and click Add";
-                instruction.className = "status-good";
-                addBtn.disabled = false;
-                addBtn.style.opacity = "1";
+                window.addEventListener('deviceorientation', handleMotion);
             }
         }
 
-        document.getElementById('addBtn').onclick = () => {
-            let h = parseFloat(document.getElementById('height-input').value);
-            let angleRad = currentTilt * (Math.PI / 180);
-            let distToPoint = Math.abs(h * Math.tan(angleRad));
-            let newPoint = { d: distToPoint, r: currentRotation };
+        // Simple Low-Pass Filter
+        let smoothedPitch = 0;
+        const alpha = 0.2; 
 
-            if (lastPoint) {
-                let angleDiff = Math.abs(lastPoint.r - newPoint.r) * (Math.PI / 180);
-                let segmentLength = Math.sqrt(Math.pow(lastPoint.d, 2) + Math.pow(newPoint.d, 2) - 2 * lastPoint.d * newPoint.d * Math.cos(angleDiff));
-                totalPathLength += segmentLength;
-                totalDisplay.innerText = totalPathLength.toFixed(2);
+        function handleMotion(e) {
+            // beta is pitch (-90 to 90), alpha is rotation (0 to 360)
+            let rawPitch = e.beta; 
+            state.rotation = e.alpha;
+            
+            smoothedPitch = (alpha * rawPitch) + (1 - alpha) * smoothedPitch;
+            state.pitch = smoothedPitch;
+
+            updateUI();
+        }
+
+        /** CALCULATIONS **/
+        function updateUI() {
+            const pitch = Math.abs(state.pitch);
+            document.getElementById('val-angle').innerText = Math.round(pitch) + '°';
+            
+            const coach = document.getElementById('angle-coach');
+            if (pitch < ANGLE_MIN) {
+                coach.innerText = "Malayo. Lumapit para accurate.";
+                coach.className = 'status-warn';
+                addBtn.disabled = true;
+            } else if (pitch > ANGLE_MAX) {
+                coach.innerText = "Masikip. Umatras ng konti.";
+                coach.className = 'status-warn';
+                addBtn.disabled = true;
+            } else {
+                coach.innerText = state.isLocked ? "Point added! Click next point." : "Hold phone at Eye Level & Aim";
+                coach.className = 'status-ok';
+                addBtn.disabled = false;
             }
-            lastPoint = newPoint;
-        };
 
-        document.getElementById('finishBtn').onclick = () => {
-            const job = document.getElementById('job-input').value;
-            if (!job) return alert("Please enter your name or address.");
-            let finalValue = ((totalPathLength + 5) * 1.15).toFixed(2);
-            if(confirm(`Send estimate of ${finalValue}m?`)) {
-                sendToServer(job, finalValue);
+            // Real-time calculation displays
+            const floorM = state.segments.reduce((a, b) => a + b, 0);
+            const vertM = (state.vAdds * 2.5) + DEFAULT_V_RUN;
+            const subtotal = floorM + vertM;
+            const buffer = subtotal * BUFFER_PCT;
+            const final = subtotal + buffer;
+
+            document.getElementById('val-floor').innerText = floorM.toFixed(2);
+            document.getElementById('val-vert').innerText = vertM.toFixed(2);
+            document.getElementById('val-buff').innerText = buffer.toFixed(2);
+            document.getElementById('val-final').innerText = final.toFixed(2);
+            
+            document.getElementById('cnt-pts').innerText = state.points.length;
+            document.getElementById('cnt-segs').innerText = state.segments.length;
+            document.getElementById('cnt-vadds').innerText = state.vAdds;
+        }
+
+        addBtn.onclick = () => {
+            const h = parseFloat(heightSel.value);
+            const pitchRad = Math.abs(state.pitch) * (Math.PI / 180);
+            
+            // Ground distance from camera center to point
+            const d = h * Math.tan(pitchRad);
+            const currentPoint = { d: d, r: state.rotation, a: state.pitch };
+
+            if (state.points.length > 0) {
+                const p1 = state.points[state.points.length - 1];
+                const p2 = currentPoint;
+
+                // Law of Cosines for the segment
+                const radDiff = Math.abs(p1.r - p2.r) * (Math.PI / 180);
+                const seg = Math.sqrt(Math.pow(p1.d, 2) + Math.pow(p2.d, 2) - 2 * p1.d * p2.d * Math.cos(radDiff));
+                
+                state.segments.push(seg);
             }
+
+            state.points.push(currentPoint);
+            state.isLocked = true;
+            document.getElementById('static-banner').style.display = 'block';
+            updateUI();
         };
 
-        document.getElementById('resetBtn').onclick = () => {
-            totalPathLength = 0; lastPoint = null;
-            totalDisplay.innerText = "0.00";
+        document.getElementById('btn-vert').onclick = () => {
+            state.vAdds++;
+            updateUI();
         };
 
-        function sendToServer(job, val) {
-            const scriptURL = 'https://script.google.com/macros/s/AKfycbwLI_UP4Zjn2WoKhojrOYKMkAQx7ximSuo1iJY2m9UhEZVe007qa5PUE3iRTVGFxWtp/exec';
-            fetch(scriptURL, {
+        document.getElementById('btn-undo').onclick = () => {
+            if (state.segments.length > 0) {
+                state.segments.pop();
+                state.points.pop();
+            } else if (state.points.length > 0) {
+                state.points.pop();
+                state.isLocked = false;
+                document.getElementById('static-banner').style.display = 'none';
+            } else if (state.vAdds > 0) {
+                state.vAdds--;
+            }
+            updateUI();
+        };
+
+        /** DATA & SUBMISSION **/
+        document.getElementById('btn-send').onclick = () => {
+            const jobId = document.getElementById('job-id').value.trim();
+            const address = document.getElementById('site-loc').value.trim();
+
+            if (!jobId || !address) {
+                alert("Please fill in Client Name and Address.");
+                return;
+            }
+            if (state.points.length < 2 && state.vAdds === 0) {
+                alert("Add at least 2 floor points or vertical runs.");
+                return;
+            }
+
+            const floorM = state.segments.reduce((a, b) => a + b, 0);
+            const vertM = (state.vAdds * 2.5) + DEFAULT_V_RUN;
+            const subtotal = floorM + vertM;
+            const buffer = subtotal * BUFFER_PCT;
+            const final = subtotal + buffer;
+
+            const content = `
+                <strong>Job:</strong> ${jobId}<br>
+                <strong>Location:</strong> ${address}<br><hr>
+                Floor Dist: ${floorM.toFixed(2)}m<br>
+                Vertical: ${vertM.toFixed(2)}m<br>
+                Buffer: ${buffer.toFixed(2)}m (15%)<br>
+                <h3 style="color:var(--success)">FINAL: ${final.toFixed(2)}m</h3>
+            `;
+            document.getElementById('modal-content').innerHTML = content;
+            document.getElementById('overlay').style.display = 'flex';
+        };
+
+        window.closeModal = () => { document.getElementById('overlay').style.display = 'none'; };
+
+        document.getElementById('confirm-send').onclick = () => {
+            const jobId = document.getElementById('job-id').value;
+            const address = document.getElementById('site-loc').value;
+            const floorM = state.segments.reduce((a, b) => a + b, 0);
+            const vertM = (state.vAdds * 2.5) + DEFAULT_V_RUN;
+            const subtotal = floorM + vertM;
+            const buffer = subtotal * BUFFER_PCT;
+            const final = subtotal + buffer;
+
+            const payload = {
+                timestamp: new Date().toISOString(),
+                job_id: jobId,
+                run_id: `${jobId}-${Date.now()}`,
+                address: address,
+                camera_height_m: parseFloat(heightSel.value),
+                height_label: heightSel.options[heightSel.selectedIndex].text,
+                floor_m: floorM,
+                vertical_m: vertM,
+                subtotal_m: subtotal,
+                buffer_pct: BUFFER_PCT,
+                buffer_m: buffer,
+                final_m: final,
+                floor_points_count: state.points.length,
+                vertical_adds_count: state.vAdds,
+                segments_count: state.segments.length,
+                angles_deg: state.points.map(p => Math.round(p.a)),
+                segments_m: state.segments.map(s => s.toFixed(3)),
+                quality_flag: state.quality,
+                warnings_count: state.warnings,
+                device: navigator.userAgent
+            };
+
+            submitData(payload);
+        };
+
+        function submitData(payload) {
+            const btn = document.getElementById('confirm-send');
+            btn.disabled = true;
+            btn.innerText = "Sending...";
+
+            fetch(SCRIPT_URL, {
                 method: 'POST',
                 mode: 'no-cors',
-                body: JSON.stringify({ clientId: job, measurement: val })
-            }).then(() => alert("Estimate sent successfully!"));
+                body: JSON.stringify(payload)
+            }).then(() => {
+                showToast();
+                resetApp();
+            }).catch(err => {
+                console.error(err);
+                // Offline fallback
+                let queue = JSON.parse(localStorage.getItem('ev_queue') || "[]");
+                queue.push(payload);
+                localStorage.setItem('ev_queue', JSON.stringify(queue));
+                alert("Connection failed. Job queued for offline sync.");
+                resetApp();
+            });
         }
+
+        function resetApp() {
+            state = { points: [], segments: [], vAdds: 0, pitch: 0, rotation: 0, quality: 'OK', warnings: 0, isLocked: false };
+            document.getElementById('job-id').value = "";
+            document.getElementById('site-loc').value = "";
+            document.getElementById('static-banner').style.display = 'none';
+            closeModal();
+            updateUI();
+            const btn = document.getElementById('confirm-send');
+            btn.disabled = false;
+            btn.innerText = "Confirm & Save";
+        }
+
+        function showToast() {
+            const t = document.getElementById('toast');
+            t.style.display = 'block';
+            setTimeout(() => { t.style.display = 'none'; }, 3000);
+        }
+
+        /** Best Effort Movement Detection **/
+        let lastAcc = {x:0, y:0, z:0};
+        window.addEventListener('devicemotion', (e) => {
+            if (!state.isLocked) return;
+            let acc = e.accelerationIncludingGravity;
+            if(!acc) return;
+            
+            let diff = Math.abs(acc.x - lastAcc.x) + Math.abs(acc.y - lastAcc.y);
+            if (diff > 5) { // Sensitivity threshold
+                state.quality = 'RECHECK';
+                state.warnings++;
+            }
+            lastAcc = {x: acc.x, y: acc.y, z: acc.z};
+        });
     </script>
 </body>
 </html>
