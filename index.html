@@ -3,27 +3,27 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>BOSS EV – B2B OIF (Progress Edition)</title>
+<title>BOSS EV – B2B OIF (Full Pro)</title>
 <style>
   :root {
     --bg: #0f172a; --panel: #1e293b; --text: #f1f5f9; --muted: #94a3b8;
     --good: #22c55e; --blue: #3b82f6; --danger: #ef4444; --purple: #a855f7;
     --outline: rgba(255,255,255,0.1); --radius: 12px;
   }
-  body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; padding-bottom: 100px; }
+  body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; padding-bottom: 100px; -webkit-tap-highlight-color: transparent; }
   
   /* Sticky Progress Header */
   #progress-container {
     position: sticky; top: 0; z-index: 1000; 
-    background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(10px);
+    background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px);
     padding: 12px 20px; border-bottom: 1px solid var(--outline);
   }
   .prog-text-row { display: flex; justify-content: space-between; font-size: 11px; font-weight: bold; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
   .prog-track { height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
   #progress-bar { height: 100%; width: 0%; background: var(--good); transition: width 0.4s ease; }
 
-  .wrap { padding: 15px; }
-  .section { background: #111827; padding: 18px; border-radius: var(--radius); border: 1px solid var(--outline); margin-bottom: 20px; }
+  .wrap { padding: 15px; max-width: 600px; margin: auto; }
+  .section { background: #111827; padding: 18px; border-radius: var(--radius); border: 1px solid var(--outline); margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
   
   .step-badge {
     background: var(--blue); color: white; width: 22px; height: 22px; 
@@ -31,13 +31,14 @@
     border-radius: 50%; font-size: 11px; margin-right: 8px; vertical-align: middle;
   }
 
-  h1 { font-size: 18px; color: var(--good); padding: 20px 15px 5px; margin: 0; }
+  h1 { font-size: 18px; color: var(--good); padding: 20px 15px 5px; margin: 0; text-align: center; }
   h2 { font-size: 15px; border-bottom: 1px solid var(--outline); padding-bottom: 8px; margin-top: 0; color: var(--blue); display: flex; align-items: center; }
-  label { font-size: 11px; color: var(--muted); display: block; margin: 12px 0 4px; text-transform: uppercase; }
-  input, select, textarea { width: 100%; padding: 12px; background: var(--panel); border: 1px solid var(--outline); color: #fff; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
+  label { font-size: 10px; color: var(--muted); display: block; margin: 12px 0 4px; text-transform: uppercase; font-weight: bold; }
+  input, select, textarea { width: 100%; padding: 12px; background: var(--panel); border: 1px solid var(--outline); color: #fff; border-radius: 8px; box-sizing: border-box; font-size: 14px; outline: none; }
+  input:focus { border-color: var(--blue); }
   
   /* Tracker UI */
-  .camBox { position: relative; background: #000; border-radius: 8px; overflow: hidden; aspect-ratio: 9/16; max-height: 380px; margin: 10px 0; }
+  .camBox { position: relative; background: #000; border-radius: 8px; overflow: hidden; aspect-ratio: 9/16; max-height: 380px; margin: 10px 0; border: 1px solid #334155; }
   video { width: 100%; height: 100%; object-fit: cover; }
   .overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
   .crosshair { width: 40px; height: 40px; border: 2px solid var(--good); border-radius: 50%; position: relative; }
@@ -56,9 +57,9 @@
   .row { display: flex; gap: 10px; margin-bottom: 10px; }
   .row > div { flex: 1; }
   
-  button { width: 100%; padding: 16px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; margin: 5px 0; transition: 0.2s; }
+  button { width: 100%; padding: 16px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; margin: 5px 0; transition: 0.2s; font-size: 14px; }
   button:active { transform: scale(0.98); }
-  button:disabled { opacity: 0.3; filter: grayscale(1); }
+  button:disabled { opacity: 0.3; filter: grayscale(1); cursor: not-allowed; }
   .primary { background: var(--good); color: #000; }
   .secondary { background: var(--blue); color: #fff; }
   .purple { background: var(--purple); color: #fff; }
@@ -69,87 +70,124 @@
 
 <div id="progress-container">
   <div class="prog-text-row">
-    <span id="progress-step-name">Step 1: Site Setup</span>
+    <span id="progress-step-name">Step 1: Project Header</span>
     <span id="progress-percentage">0%</span>
   </div>
-  <div class="prog-track">
-    <div id="progress-bar"></div>
-  </div>
+  <div class="prog-track"><div id="progress-bar"></div></div>
 </div>
 
-<h1>B2B Ocular Inspection Form</h1>
+<h1>BOSS EV B2B Inspection</h1>
 
 <div class="wrap">
   <div class="section">
-    <h2><span class="step-badge">1</span>Site Info</h2>
+    <h2><span class="step-badge">1</span>B2B Job Header</h2>
     <label>Client Company</label>
-    <select id="client_company" onchange="updateProgress()"><option>FINSI</option><option>Greenstrum</option></select>
-    
-    <label>Site ID / Asset Code</label>
-    <input id="site_id" placeholder="e.g. MNL-001" oninput="updateProgress()">
-    
-    <label>Inspector Name</label>
-    <input id="inspector_name" placeholder="Full Name" oninput="updateProgress()">
+    <select id="client_company" onchange="updateProgress()">
+      <option>FINSI</option>
+      <option>Greenstrum</option>
+    </select>
+
+    <div class="row">
+      <div><label>Site ID / Asset Code</label><input id="site_id" placeholder="MNL-001" oninput="updateProgress()"></div>
+      <div><label>Project Ref (PO/NTP)</label><input id="project_ref" placeholder="PO#" oninput="updateProgress()"></div>
+    </div>
+
+    <div class="row">
+      <div><label>Inspector Name</label><input id="inspector_name" oninput="updateProgress()"></div>
+      <div><label>SLA Target Date</label><input type="date" id="sla_date" onchange="updateProgress()"></div>
+    </div>
   </div>
 
   <div class="section">
-    <h2><span class="step-badge">2</span>EV Pro Tracker</h2>
-    <label>Your Height (Eye Level)</label>
+    <h2><span class="step-badge">2</span>Client Information</h2>
+    <label>Full Client Name</label><input id="client_name" oninput="updateProgress()">
+    <label>Installation Address</label><input id="address" oninput="updateProgress()">
+    <div class="row">
+      <div><label>Contact Person</label><input id="contact_person" oninput="updateProgress()"></div>
+      <div><label>Mobile / Email</label><input id="contact_details" oninput="updateProgress()"></div>
+    </div>
+    <label>Project Category</label>
+    <select id="project_category" onchange="updateProgress()">
+      <option>Residential</option><option>Condominium</option><option>Commercial</option>
+    </select>
+  </div>
+
+  <div class="section">
+    <h2><span class="step-badge">3</span>Cable Route Measurement</h2>
+    <label>Device Height (Eye Level)</label>
     <select id="heightSel" onchange="updateProgress()"></select>
     
     <div class="camBox">
       <video id="video" playsinline autoplay muted></video>
       <div class="overlay"><div class="crosshair"></div></div>
     </div>
-    
     <div class="coach-bar"><div id="coachFill" class="coach-fill"></div></div>
-    <p id="coachText" style="font-size: 11px; text-align: center; color: var(--muted); margin: 5px 0;">Tap "Enable Sensors" to start</p>
+    <p id="coachText" style="font-size: 11px; text-align: center; color: var(--muted); margin: 5px 0;">Enable Camera to Start</p>
 
     <div class="metrics">
       <div class="metric-card"><span>Floor (m)</span><span class="big-num" id="floorM">0.00</span></div>
       <div class="metric-card"><span>Final (m)</span><span class="big-num" id="finalM">0.00</span></div>
     </div>
 
-    <button class="secondary" id="btnEnable">ENABLE CAMERA & SENSORS</button>
+    <button class="secondary" id="btnEnable">ENABLE SENSORS</button>
     <div class="row">
-      <button class="primary" id="btnAddPoint" disabled>ADD FLOOR POINT</button>
+      <button class="primary" id="btnAddPoint" disabled>ADD POINT</button>
       <button class="purple" id="btnAddVert">+ 2.5m VERT</button>
     </div>
-    <button class="danger-btn" id="btnReset" style="padding: 8px;">RESET MEASUREMENT</button>
+    <button class="danger-btn" id="btnReset" style="padding: 8px; font-size: 11px;">RESET DISTANCE</button>
   </div>
 
   <div class="section">
-    <h2><span class="step-badge">3</span>Electrical Audit</h2>
-    <label>Main Breaker Size (Amps)</label>
-    <input type="number" id="main_breaker" placeholder="e.g. 40" oninput="updateProgress()">
-    
-    <label>Voltage Readings (L1 to Neutral)</label>
+    <h2><span class="step-badge">4</span>Electrical Checklist</h2>
     <div class="row">
-      <div><input id="v_l1_n" placeholder="Reading" oninput="updateProgress()"></div>
+      <div><label>Charger Type</label><select id="charger_type"><option>AC</option><option>DC</option></select></div>
+      <div><label>Qty</label><input type="number" id="charger_qty" value="1"></div>
     </div>
-    <label>Notes / Recommendations</label>
-    <textarea id="recommendation" rows="3" placeholder="Additional findings..." oninput="updateProgress()"></textarea>
+    <label>Main Breaker Size (Amps)</label>
+    <input type="number" id="main_breaker" placeholder="e.g. 60" oninput="updateProgress()">
+    
+    <div class="row">
+      <div><label>Spare Breaker?</label><select id="spare_breaker"><option>None</option><option>Yes</option></select></div>
+      <div><label>Busbar Space?</label><select id="busbar_space"><option>None</option><option>Yes</option></select></div>
+    </div>
+
+    <label>Voltage Readings (V)</label>
+    <div class="row">
+      <div><label>L1-N</label><input id="v_l1_n" oninput="updateProgress()"></div>
+      <div><label>L2-N</label><input id="v_l2_n" oninput="updateProgress()"></div>
+      <div><label>L3-N</label><input id="v_l3_n" oninput="updateProgress()"></div>
+    </div>
+    
+    <label>Current Readings (A)</label>
+    <div class="row">
+      <div><label>L1</label><input id="i_l1" oninput="updateProgress()"></div>
+      <div><label>L2</label><input id="i_l2" oninput="updateProgress()"></div>
+      <div><label>L3</label><input id="i_l3" oninput="updateProgress()"></div>
+    </div>
   </div>
 
   <div class="section">
-    <h2><span class="step-badge">4</span>Finalize & Sign</h2>
-    <label>Sketch (Cable Path Layout)</label>
-    <canvas id="sketch1" height="180"></canvas>
+    <h2><span class="step-badge">5</span>Review & Sign</h2>
+    <label>Cable Path Sketch (Proposed)</label>
+    <canvas id="sketch1" height="200"></canvas>
     <button class="secondary" style="padding: 8px; font-size: 11px;" onclick="clearCanvas('sketch1')">Clear Sketch</button>
     
     <label>Electrician Signature</label>
-    <canvas id="signature" height="120"></canvas>
+    <canvas id="signature" height="150"></canvas>
     <button class="secondary" style="padding: 8px; font-size: 11px;" onclick="clearCanvas('signature')">Clear Signature</button>
+    
+    <label>Design Recommendation</label>
+    <textarea id="recommendation" rows="3" oninput="updateProgress()"></textarea>
   </div>
 
-  <button class="primary" id="submitBtn" onclick="submitFullForm()" disabled style="font-size: 18px; height: 70px; box-shadow: 0 10px 20px rgba(34, 197, 94, 0.3);">SUBMIT OIF TO CLOUD</button>
-  <p id="errorNote" style="text-align:center; font-size: 12px; color: var(--danger); margin-top: 10px;">Complete all steps to enable submission.</p>
+  <button class="primary" id="submitBtn" onclick="submitFullForm()" disabled style="font-size: 18px; height: 75px;">SUBMIT TO GOOGLE SHEETS</button>
+  <p id="errorNote" style="text-align:center; font-size: 11px; color: var(--danger); margin-top: 10px;">Progress must be 100% to submit.</p>
 </div>
 
 <script>
+// UPDATE THIS URL WITH YOUR DEPLOYED GOOGLE APPS SCRIPT URL
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbznkBTqngel2F66-wWJtVlrZMverQeJdlR1oHHjC1E8vOPdUpKYsWdGlYh_jCS7zrf8Fg/exec";
 
-/** STATE & MATH **/
 let state = { points: [], segments: [], vAdds: 0, pitch: 0, yaw: 0, hasSketched: false, hasSigned: false };
 const BASE_VERT = 5.0;
 const BUF = 0.15;
@@ -164,49 +202,37 @@ for(let i=60; i<=75; i++){
     hSel.appendChild(opt);
 }
 
-// Update Progress Logic
 function updateProgress() {
     let score = 0;
-    
-    // Step 1: Site Info (25 points)
+    // Section 1 & 2 (30 pts)
     if(document.getElementById('site_id').value.length > 2) score += 10;
-    if(document.getElementById('inspector_name').value.length > 2) score += 15;
-
-    // Step 2: Measurement (25 points)
-    if(state.points.length > 0) score += 25;
-
-    // Step 3: Audit (25 points)
+    if(document.getElementById('inspector_name').value.length > 2) score += 10;
+    if(document.getElementById('client_name').value.length > 2) score += 10;
+    // Section 3 (20 pts)
+    if(state.points.length > 0) score += 20;
+    // Section 4 (25 pts)
     if(document.getElementById('main_breaker').value > 0) score += 15;
     if(document.getElementById('v_l1_n').value.length > 1) score += 10;
-
-    // Step 4: Visuals (25 points)
+    // Section 5 (25 pts)
     if(state.hasSketched) score += 15;
     if(state.hasSigned) score += 10;
 
-    // Update UI
     document.getElementById('progress-bar').style.width = score + "%";
     document.getElementById('progress-percentage').innerText = score + "%";
     
     const stepText = document.getElementById('progress-step-name');
     const submitBtn = document.getElementById('submitBtn');
-    const errorNote = document.getElementById('errorNote');
 
-    if(score < 25) stepText.innerText = "Step 1: Site Setup";
+    if(score < 30) stepText.innerText = "Step 1: Header Info";
     else if(score < 50) stepText.innerText = "Step 2: Measurement";
     else if(score < 75) stepText.innerText = "Step 3: Electrical Audit";
-    else if(score < 100) stepText.innerText = "Step 4: Signing Off";
+    else if(score < 100) stepText.innerText = "Step 4: Finalize";
     else stepText.innerText = "Ready to Submit!";
 
-    if(score === 100) {
-      submitBtn.disabled = false;
-      errorNote.style.display = "none";
-    } else {
-      submitBtn.disabled = true;
-      errorNote.style.display = "block";
-    }
+    submitBtn.disabled = (score < 100);
 }
 
-/** CAMERA & TRACKER **/
+/** TRACKER LOGIC **/
 async function initSensors() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
@@ -218,7 +244,7 @@ async function initSensors() {
           window.addEventListener('deviceorientation', handleOri);
       }
       document.getElementById('btnEnable').style.display = "none";
-    } catch(e) { alert("Camera Access Denied"); }
+    } catch(e) { alert("Enable camera in settings."); }
 }
 
 function handleOri(e) {
@@ -233,13 +259,11 @@ function updateTrackerUI() {
     const fill = document.getElementById('coachFill');
     const text = document.getElementById('coachText');
     const btn = document.getElementById('btnAddPoint');
-    
     fill.style.width = (p/90*100)+'%';
     fill.className = isOk ? 'coach-fill' : 'coach-fill bad';
     text.innerText = isOk ? "Aim at floor and Add Point" : "Adjust angle (15°-75°)";
     text.style.color = isOk ? "var(--good)" : "var(--danger)";
     btn.disabled = !isOk;
-
     const floor = state.segments.reduce((a,b)=>a+b, 0);
     const final = (floor + BASE_VERT + (state.vAdds*2.5)) * (1+BUF);
     document.getElementById('floorM').innerText = floor.toFixed(2);
@@ -257,71 +281,74 @@ document.getElementById('btnAddPoint').onclick = () => {
         state.segments.push(s);
     }
     state.points.push(curr);
-    updateTrackerUI();
-    updateProgress();
+    updateTrackerUI(); updateProgress();
 };
 
 document.getElementById('btnAddVert').onclick = () => { state.vAdds++; updateTrackerUI(); updateProgress(); };
 document.getElementById('btnReset').onclick = () => { state.points=[]; state.segments=[]; state.vAdds=0; updateTrackerUI(); updateProgress(); };
 document.getElementById('btnEnable').onclick = initSensors;
 
-/** CANVAS SIGNATURE/SKETCH **/
+/** CANVAS LOGIC **/
 function initCanvas(id) {
     const canvas = document.getElementById(id);
     const ctx = canvas.getContext('2d');
     canvas.width = canvas.offsetWidth;
     let drawing = false;
-
     const start = (e) => { 
-      drawing = true; 
-      ctx.beginPath(); 
-      const rect = canvas.getBoundingClientRect();
-      const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-      const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-      ctx.moveTo(x, y); 
+      drawing = true; ctx.beginPath();
+      const r = canvas.getBoundingClientRect();
+      ctx.moveTo((e.touches ? e.touches[0].clientX : e.clientX) - r.left, (e.touches ? e.touches[0].clientY : e.clientY) - r.top); 
     };
     const move = (e) => { 
-      if(!drawing) return; 
-      e.preventDefault();
-      const rect = canvas.getBoundingClientRect();
-      const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-      const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-      ctx.lineTo(x, y); ctx.stroke(); 
-      if(id==='sketch1') state.hasSketched = true;
-      if(id==='signature') state.hasSigned = true;
+      if(!drawing) return; e.preventDefault();
+      const r = canvas.getBoundingClientRect();
+      ctx.lineTo((e.touches ? e.touches[0].clientX : e.clientX) - r.left, (e.touches ? e.touches[0].clientY : e.clientY) - r.top); ctx.stroke(); 
+      if(id==='sketch1') state.hasSketched = true; else state.hasSigned = true;
       updateProgress();
     };
-    const stop = () => drawing = false;
-
-    canvas.addEventListener('mousedown', start); canvas.addEventListener('mousemove', move); window.addEventListener('mouseup', stop);
-    canvas.addEventListener('touchstart', start); canvas.addEventListener('touchmove', move); window.addEventListener('touchend', stop);
+    canvas.addEventListener('mousedown', start); canvas.addEventListener('mousemove', move); window.addEventListener('mouseup', ()=>drawing=false);
+    canvas.addEventListener('touchstart', start); canvas.addEventListener('touchmove', move); window.addEventListener('touchend', ()=>drawing=false);
     ctx.lineWidth = 2; ctx.strokeStyle = "#000";
 }
-
 function clearCanvas(id) { 
-    const c = document.getElementById(id); 
-    c.getContext('2d').clearRect(0,0,c.width,c.height); 
-    if(id==='sketch1') state.hasSketched = false;
-    if(id==='signature') state.hasSigned = false;
-    updateProgress();
+  const c = document.getElementById(id); c.getContext('2d').clearRect(0,0,c.width,c.height); 
+  if(id==='sketch1') state.hasSketched = false; else state.hasSigned = false;
+  updateProgress();
 }
-
-initCanvas('sketch1');
-initCanvas('signature');
+initCanvas('sketch1'); initCanvas('signature');
 
 /** SUBMISSION **/
 async function submitFullForm() {
     const btn = document.getElementById('submitBtn');
-    btn.disabled = true;
-    btn.innerText = "UPLOADING TO GOOGLE...";
+    btn.disabled = true; btn.innerText = "UPLOADING...";
 
     const payload = {
         timestamp: new Date().toISOString(),
         client_company: document.getElementById('client_company').value,
         site_id: document.getElementById('site_id').value,
+        project_ref: document.getElementById('project_ref').value,
         inspector_name: document.getElementById('inspector_name').value,
+        sla_date: document.getElementById('sla_date').value,
+        client_name: document.getElementById('client_name').value,
+        address: document.getElementById('address').value,
+        contact_person: document.getElementById('contact_person').value,
+        contact_details: document.getElementById('contact_details').value,
+        project_category: document.getElementById('project_category').value,
+        charger_type: document.getElementById('charger_type').value,
+        charger_model: "", // Empty for manual fill
+        charger_qty: document.getElementById('charger_qty').value,
+        system_voltage: "",
         main_breaker: document.getElementById('main_breaker').value,
+        spare_breaker: document.getElementById('spare_breaker').value,
+        busbar_space: document.getElementById('busbar_space').value,
+        conduit_type: "",
+        v_l1_l2: "", v_l2_l3: "", v_l3_l1: "",
         v_l1_n: document.getElementById('v_l1_n').value,
+        v_l2_n: document.getElementById('v_l2_n').value,
+        v_l3_n: document.getElementById('v_l3_n').value,
+        i_l1: document.getElementById('i_l1').value,
+        i_l2: document.getElementById('i_l2').value,
+        i_l3: document.getElementById('i_l3').value,
         floor_m: document.getElementById('floorM').innerText,
         vertical_m: (BASE_VERT + state.vAdds*2.5).toFixed(2),
         final_m: document.getElementById('finalM').innerText,
@@ -331,15 +358,8 @@ async function submitFullForm() {
     };
     
     fetch(APPS_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) })
-    .then(() => { 
-      alert("SUCCESS: Job data saved to Google Sheets."); 
-      location.reload(); 
-    })
-    .catch(() => {
-      alert("ERROR: Connection failed.");
-      btn.disabled = false;
-      btn.innerText = "RETRY SUBMISSION";
-    });
+    .then(() => { alert("SUCCESS: Saved to Cloud."); location.reload(); })
+    .catch(() => { alert("FAILED: Check Connection."); btn.disabled = false; btn.innerText = "RETRY"; });
 }
 </script>
 </body>
