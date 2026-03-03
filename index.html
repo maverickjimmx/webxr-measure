@@ -1,62 +1,64 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>EV Pro Tracker - Admin Mode</title>
+    <title>EV Installation Estimator</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body { margin: 0; text-align: center; background: #1a1a1a; color: white; font-family: sans-serif; overflow: hidden; }
         #camera-container { position: relative; width: 100vw; height: 100vh; }
         video { width: 100%; height: 100%; object-fit: cover; }
         
-        /* UI Overlays */
-        #header-ui { position: fixed; top: 0; width: 100%; z-index: 10; background: rgba(0,0,0,0.8); padding: 10px 0; border-bottom: 2px solid #3498db; }
-        #job-input { padding: 10px; width: 80%; border-radius: 5px; border: 1px solid #3498db; background: #222; color: white; font-size: 16px; margin-bottom: 5px; }
+        #header-ui { position: fixed; top: 0; width: 100%; z-index: 10; background: rgba(0,0,0,0.9); padding: 10px 0; border-bottom: 2px solid #2ecc71; }
+        .setup-row { display: flex; justify-content: center; gap: 10px; margin-bottom: 5px; }
+        input, select { padding: 8px; border-radius: 5px; border: none; font-size: 14px; }
         
-        #crosshair { position: absolute; top: 50%; left: 50%; width: 30px; height: 30px; transform: translate(-50%, -50%); pointer-events: none; border: 2px solid #3498db; border-radius: 50%; }
-        #crosshair::after { content: ''; position: absolute; top: 14px; left: 0; width: 100%; height: 2px; background: #3498db; }
-        #crosshair::before { content: ''; position: absolute; left: 14px; top: 0; height: 100%; width: 2px; background: #3498db; }
+        #crosshair { position: absolute; top: 50%; left: 50%; width: 40px; height: 40px; transform: translate(-50%, -50%); pointer-events: none; }
+        .ch-line { position: absolute; background: #2ecc71; }
+        .h { top: 19px; width: 100%; height: 2px; }
+        .v { left: 19px; height: 100%; width: 2px; }
 
-        #total-display { font-size: 24px; color: #2ecc71; font-weight: bold; margin-top: 5px; }
+        #instruction-box { background: rgba(46, 204, 113, 0.2); padding: 5px; font-size: 13px; color: #2ecc71; }
         
-        #ui-controls { position: fixed; bottom: 20px; width: 100%; z-index: 10; display: flex; flex-direction: column; align-items: center; gap: 8px; }
-        .btn-row { display: flex; width: 90%; gap: 10px; }
-        .btn { padding: 16px; font-size: 16px; font-weight: bold; border-radius: 12px; border: none; cursor: pointer; color: white; transition: 0.2s; }
-        
-        #addBtn { background: #3498db; flex: 2; }
-        #resetBtn { background: #e74c3c; flex: 1; } /* Red for Reset */
-        #vertBtn { background: #9b59b6; width: 90%; }
-        #finishBtn { background: #2ecc71; width: 90%; }
-        
-        .btn:active { transform: scale(0.95); opacity: 0.8; }
+        #ui-controls { position: fixed; bottom: 20px; width: 100%; z-index: 10; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .btn { padding: 18px; width: 90%; font-size: 18px; font-weight: bold; border-radius: 50px; border: none; cursor: pointer; color: white; }
+        #addBtn { background: #3498db; }
+        #finishBtn { background: #2ecc71; }
+        #resetBtn { background: #e74c3c; padding: 10px; width: 40%; font-size: 14px; }
     </style>
 </head>
 <body>
 
     <div id="header-ui">
-        <input type="text" id="job-input" placeholder="Enter Customer Name or Job #" autocomplete="off">
-        <div id="total-display">TOTAL: <span id="total-val">0.00</span>m</div>
+        <div class="setup-row">
+            <input type="text" id="job-input" placeholder="Your Name / Address">
+            <select id="height-input">
+                <option value="1.5">Height: 5'0"</option>
+                <option value="1.6" selected>Height: 5'3"</option>
+                <option value="1.7">Height: 5'7"</option>
+                <option value="1.8">Height: 5'11"</option>
+                <option value="1.9">Height: 6'3"</option>
+            </select>
+        </div>
+        <div id="instruction-box">Step 1: Aim at floor below Charger & click 'Add'</div>
+        <div style="font-size: 20px; margin-top:5px;">Est. Cable: <span id="total-val">0.00</span>m</div>
     </div>
 
     <div id="camera-container">
         <video id="webcam" autoplay playsinline></video>
-        <div id="crosshair"></div>
+        <div id="crosshair"><div class="ch-line h"></div><div class="ch-line v"></div></div>
     </div>
 
     <div id="ui-controls">
-        <div class="btn-row">
-            <button id="addBtn" class="btn">ADD FLOOR POINT</button>
-            <button id="resetBtn" class="btn">RESET</button>
-        </div>
-        <button id="vertBtn" class="btn">+ ADD 2.5m VERTICAL</button>
-        <button id="finishBtn" class="btn">FINISH & SAVE TO SHEET</button>
+        <button id="addBtn" class="btn">ADD POINT ON FLOOR</button>
+        <button id="finishBtn" class="btn">SEND ESTIMATE TO US</button>
+        <button id="resetBtn" class="btn">RESTART</button>
     </div>
 
     <script>
         const video = document.getElementById('webcam');
         const totalDisplay = document.getElementById('total-val');
-        const jobInput = document.getElementById('job-input');
+        const instruction = document.getElementById('instruction-box');
         
-        let cameraHeight = 1.6; 
         let totalPathLength = 0;
         let lastPoint = null;
         let currentTilt = 0;
@@ -69,19 +71,10 @@
             currentRotation = e.alpha;
         }, true);
 
-        // RESET FUNCTION
-        document.getElementById('resetBtn').onclick = () => {
-            if(confirm("Clear current measurement and start over?")) {
-                totalPathLength = 0;
-                lastPoint = null;
-                totalDisplay.innerText = "0.00";
-            }
-        };
-
-        // Add Ground Segment
         document.getElementById('addBtn').onclick = () => {
+            let h = parseFloat(document.getElementById('height-input').value);
             let angleRad = currentTilt * (Math.PI / 180);
-            let distToPoint = Math.abs(cameraHeight * Math.tan(angleRad));
+            let distToPoint = Math.abs(h * Math.tan(angleRad));
             let newPoint = { d: distToPoint, r: currentRotation };
 
             if (lastPoint) {
@@ -89,48 +82,38 @@
                 let segmentLength = Math.sqrt(Math.pow(lastPoint.d, 2) + Math.pow(newPoint.d, 2) - 2 * lastPoint.d * newPoint.d * Math.cos(angleDiff));
                 totalPathLength += segmentLength;
                 totalDisplay.innerText = totalPathLength.toFixed(2);
+                instruction.innerText = "Step 2: Aim at floor below Meter & click 'Add'";
+            } else {
+                instruction.innerText = "Final Step: Aim at Meter base and click 'Add' again";
             }
             lastPoint = newPoint;
         };
 
-        // Add Vertical Run
-        document.getElementById('vertBtn').onclick = () => {
-            totalPathLength += 2.5;
-            totalDisplay.innerText = totalPathLength.toFixed(2);
-        };
-
-        // Final Save
         document.getElementById('finishBtn').onclick = () => {
-            const jobName = jobInput.value.trim();
-            if (!jobName) return alert("Please enter a Customer Name first!");
-            if (totalPathLength === 0) return alert("No measurement recorded.");
+            const job = document.getElementById('job-input').value;
+            if (!job) return alert("Please enter your name or address.");
             
-            let finalValue = (totalPathLength * 1.10).toFixed(2); 
+            // Note: We automatically add 5m (2x 2.5m) for the wall runs + 15% slack
+            let finalValue = ((totalPathLength + 5) * 1.15).toFixed(2);
             
-            if(confirm(`Save ${finalValue}m for ${jobName}?`)) {
-                sendToServer(jobName, finalValue);
+            if(confirm(`Send estimate of ${finalValue}m to the team?`)) {
+                sendToServer(job, finalValue);
             }
         };
 
-        function sendToServer(job, val) {
-            const scriptURL = 'https://script.google.com/macros/s/AKfycbwLI_UP4Zjn2WoKhojrOYKMkAQx7ximSuo1iJY2m9UhEZVe007qa5PUE3iRTVGFxWtp/exec'; 
-            
-            const payload = {
-                clientId: job,
-                measurement: val
-            };
+        document.getElementById('resetBtn').onclick = () => {
+            totalPathLength = 0; lastPoint = null;
+            totalDisplay.innerText = "0.00";
+            instruction.innerText = "Step 1: Aim at floor below Charger & click 'Add'";
+        };
 
+        function sendToServer(job, val) {
+            const scriptURL = 'https://script.google.com/macros/s/AKfycbwLI_UP4Zjn2WoKhojrOYKMkAQx7ximSuo1iJY2m9UhEZVe007qa5PUE3iRTVGFxWtp/exec';
             fetch(scriptURL, {
                 method: 'POST',
                 mode: 'no-cors',
-                body: JSON.stringify(payload)
-            }).then(() => {
-                alert("Successfully saved!");
-                totalPathLength = 0;
-                lastPoint = null;
-                totalDisplay.innerText = "0.00";
-                jobInput.value = "";
-            }).catch(err => alert("Error: " + err));
+                body: JSON.stringify({ clientId: job, measurement: val })
+            }).then(() => alert("Thank you! Estimate sent. You can close this tab now."));
         }
     </script>
 </body>
