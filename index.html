@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>EV Pro Tracker - Client Mode</title>
+    <title>EV Pro Tracker - Admin Mode</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body { margin: 0; text-align: center; background: #1a1a1a; color: white; font-family: sans-serif; overflow: hidden; }
@@ -19,10 +19,14 @@
         #total-display { font-size: 24px; color: #2ecc71; font-weight: bold; margin-top: 5px; }
         
         #ui-controls { position: fixed; bottom: 20px; width: 100%; z-index: 10; display: flex; flex-direction: column; align-items: center; gap: 8px; }
-        .btn { padding: 16px; width: 90%; font-size: 16px; font-weight: bold; border-radius: 12px; border: none; cursor: pointer; color: white; transition: 0.2s; }
-        #addBtn { background: #3498db; }
-        #vertBtn { background: #9b59b6; }
-        #finishBtn { background: #2ecc71; }
+        .btn-row { display: flex; width: 90%; gap: 10px; }
+        .btn { padding: 16px; font-size: 16px; font-weight: bold; border-radius: 12px; border: none; cursor: pointer; color: white; transition: 0.2s; }
+        
+        #addBtn { background: #3498db; flex: 2; }
+        #resetBtn { background: #e74c3c; flex: 1; } /* Red for Reset */
+        #vertBtn { background: #9b59b6; width: 90%; }
+        #finishBtn { background: #2ecc71; width: 90%; }
+        
         .btn:active { transform: scale(0.95); opacity: 0.8; }
     </style>
 </head>
@@ -39,7 +43,10 @@
     </div>
 
     <div id="ui-controls">
-        <button id="addBtn" class="btn">ADD FLOOR POINT</button>
+        <div class="btn-row">
+            <button id="addBtn" class="btn">ADD FLOOR POINT</button>
+            <button id="resetBtn" class="btn">RESET</button>
+        </div>
         <button id="vertBtn" class="btn">+ ADD 2.5m VERTICAL</button>
         <button id="finishBtn" class="btn">FINISH & SAVE TO SHEET</button>
     </div>
@@ -49,7 +56,7 @@
         const totalDisplay = document.getElementById('total-val');
         const jobInput = document.getElementById('job-input');
         
-        let cameraHeight = 1.6; // Your eye-level height
+        let cameraHeight = 1.6; 
         let totalPathLength = 0;
         let lastPoint = null;
         let currentTilt = 0;
@@ -61,6 +68,15 @@
             currentTilt = e.beta;
             currentRotation = e.alpha;
         }, true);
+
+        // RESET FUNCTION
+        document.getElementById('resetBtn').onclick = () => {
+            if(confirm("Clear current measurement and start over?")) {
+                totalPathLength = 0;
+                lastPoint = null;
+                totalDisplay.innerText = "0.00";
+            }
+        };
 
         // Add Ground Segment
         document.getElementById('addBtn').onclick = () => {
@@ -89,7 +105,7 @@
             if (!jobName) return alert("Please enter a Customer Name first!");
             if (totalPathLength === 0) return alert("No measurement recorded.");
             
-            let finalValue = (totalPathLength * 1.10).toFixed(2); // 10% slack
+            let finalValue = (totalPathLength * 1.10).toFixed(2); 
             
             if(confirm(`Save ${finalValue}m for ${jobName}?`)) {
                 sendToServer(jobName, finalValue);
@@ -97,7 +113,7 @@
         };
 
         function sendToServer(job, val) {
-            const scriptURL = 'https://script.google.com/macros/s/AKfycbwLI_UP4Zjn2WoKhojrOYKMkAQx7ximSuo1iJY2m9UhEZVe007qa5PUE3iRTVGFxWtp/exec'; // <--- PUT YOUR URL HERE
+            const scriptURL = 'https://script.google.com/macros/s/AKfycbwLI_UP4Zjn2WoKhojrOYKMkAQx7ximSuo1iJY2m9UhEZVe007qa5PUE3iRTVGFxWtp/exec'; 
             
             const payload = {
                 clientId: job,
@@ -110,7 +126,6 @@
                 body: JSON.stringify(payload)
             }).then(() => {
                 alert("Successfully saved!");
-                // Clear for next job
                 totalPathLength = 0;
                 lastPoint = null;
                 totalDisplay.innerText = "0.00";
