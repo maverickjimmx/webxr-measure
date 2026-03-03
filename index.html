@@ -17,30 +17,32 @@
         .h { top: 19px; width: 100%; height: 2px; }
         .v { left: 19px; height: 100%; width: 2px; }
 
-        #instruction-box { background: rgba(46, 204, 113, 0.2); padding: 5px; font-size: 13px; color: #2ecc71; }
+        #instruction-box { padding: 8px; font-size: 14px; font-weight: bold; transition: 0.3s; }
+        .status-good { background: rgba(46, 204, 113, 0.3); color: #2ecc71; }
+        .status-warn { background: rgba(231, 76, 60, 0.5); color: #ff9f91; }
         
         #ui-controls { position: fixed; bottom: 20px; width: 100%; z-index: 10; display: flex; flex-direction: column; align-items: center; gap: 10px; }
         .btn { padding: 18px; width: 90%; font-size: 18px; font-weight: bold; border-radius: 50px; border: none; cursor: pointer; color: white; }
         #addBtn { background: #3498db; }
         #finishBtn { background: #2ecc71; }
-        #resetBtn { background: #e74c3c; padding: 10px; width: 40%; font-size: 14px; }
+        #resetBtn { background: #444; padding: 10px; width: 40%; font-size: 14px; }
     </style>
 </head>
 <body>
 
     <div id="header-ui">
         <div class="setup-row">
-            <input type="text" id="job-input" placeholder="Your Name / Address">
+            <input type="text" id="job-input" placeholder="Name / Address">
             <select id="height-input">
-                <option value="1.5">Height: 5'0"</option>
-                <option value="1.6" selected>Height: 5'3"</option>
-                <option value="1.7">Height: 5'7"</option>
-                <option value="1.8">Height: 5'11"</option>
-                <option value="1.9">Height: 6'3"</option>
+                <option value="1.5">5'0"</option>
+                <option value="1.6" selected>5'3"</option>
+                <option value="1.7">5'7"</option>
+                <option value="1.8">5'11"</option>
+                <option value="1.9">6'3"</option>
             </select>
         </div>
-        <div id="instruction-box">Step 1: Aim at floor below Charger & click 'Add'</div>
-        <div style="font-size: 20px; margin-top:5px;">Est. Cable: <span id="total-val">0.00</span>m</div>
+        <div id="instruction-box" class="status-good">Hold phone at Eye Level</div>
+        <div style="font-size: 18px; margin-top:5px;">Est. Cable: <span id="total-val">0.00</span>m</div>
     </div>
 
     <div id="camera-container">
@@ -58,6 +60,7 @@
         const video = document.getElementById('webcam');
         const totalDisplay = document.getElementById('total-val');
         const instruction = document.getElementById('instruction-box');
+        const addBtn = document.getElementById('addBtn');
         
         let totalPathLength = 0;
         let lastPoint = null;
@@ -69,7 +72,29 @@
         window.addEventListener('deviceorientation', (e) => {
             currentTilt = e.beta;
             currentRotation = e.alpha;
+            updateWarning();
         }, true);
+
+        function updateWarning() {
+            // Beta angle is usually 0 when vertical, 90 when horizontal.
+            // We want the client between 15 and 70 degrees for accuracy.
+            if (currentTilt < 15) {
+                instruction.innerText = "⚠ TOO FAR: Walk closer to the wall";
+                instruction.className = "status-warn";
+                addBtn.disabled = true;
+                addBtn.style.opacity = "0.5";
+            } else if (currentTilt > 75) {
+                instruction.innerText = "⚠ TOO CLOSE: Step back from the wall";
+                instruction.className = "status-warn";
+                addBtn.disabled = true;
+                addBtn.style.opacity = "0.5";
+            } else {
+                instruction.innerText = lastPoint ? "Aim at Meter base and click Add" : "Aim at Charger base and click Add";
+                instruction.className = "status-good";
+                addBtn.disabled = false;
+                addBtn.style.opacity = "1";
+            }
+        }
 
         document.getElementById('addBtn').onclick = () => {
             let h = parseFloat(document.getElementById('height-input').value);
@@ -82,9 +107,6 @@
                 let segmentLength = Math.sqrt(Math.pow(lastPoint.d, 2) + Math.pow(newPoint.d, 2) - 2 * lastPoint.d * newPoint.d * Math.cos(angleDiff));
                 totalPathLength += segmentLength;
                 totalDisplay.innerText = totalPathLength.toFixed(2);
-                instruction.innerText = "Step 2: Aim at floor below Meter & click 'Add'";
-            } else {
-                instruction.innerText = "Final Step: Aim at Meter base and click 'Add' again";
             }
             lastPoint = newPoint;
         };
@@ -92,11 +114,8 @@
         document.getElementById('finishBtn').onclick = () => {
             const job = document.getElementById('job-input').value;
             if (!job) return alert("Please enter your name or address.");
-            
-            // Note: We automatically add 5m (2x 2.5m) for the wall runs + 15% slack
             let finalValue = ((totalPathLength + 5) * 1.15).toFixed(2);
-            
-            if(confirm(`Send estimate of ${finalValue}m to the team?`)) {
+            if(confirm(`Send estimate of ${finalValue}m?`)) {
                 sendToServer(job, finalValue);
             }
         };
@@ -104,16 +123,15 @@
         document.getElementById('resetBtn').onclick = () => {
             totalPathLength = 0; lastPoint = null;
             totalDisplay.innerText = "0.00";
-            instruction.innerText = "Step 1: Aim at floor below Charger & click 'Add'";
         };
 
         function sendToServer(job, val) {
-            const scriptURL = 'https://script.google.com/macros/s/AKfycbwLI_UP4Zjn2WoKhojrOYKMkAQx7ximSuo1iJY2m9UhEZVe007qa5PUE3iRTVGFxWtp/exec';
+            const scriptURL = 'YOUR_GOOGLE_SCRIPT_URL_HERE';
             fetch(scriptURL, {
                 method: 'POST',
                 mode: 'no-cors',
                 body: JSON.stringify({ clientId: job, measurement: val })
-            }).then(() => alert("Thank you! Estimate sent. You can close this tab now."));
+            }).then(() => alert("Estimate sent successfully!"));
         }
     </script>
 </body>
