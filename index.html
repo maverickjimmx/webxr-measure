@@ -3,126 +3,158 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>BOSS EV – B2B OIF (Full Pro)</title>
+<title>BOSS EV – B2B OIF (Progress Edition)</title>
 <style>
   :root {
     --bg: #0f172a; --panel: #1e293b; --text: #f1f5f9; --muted: #94a3b8;
     --good: #22c55e; --blue: #3b82f6; --danger: #ef4444; --purple: #a855f7;
     --outline: rgba(255,255,255,0.1); --radius: 12px;
   }
-  body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; padding-bottom: 100px; }
-  .section { background: #111827; padding: 15px; border-radius: var(--radius); border: 1px solid var(--outline); margin-bottom: 20px; }
-  h1 { font-size: 20px; color: var(--good); margin-bottom: 20px; text-align: center; }
-  h2 { font-size: 16px; border-bottom: 1px solid var(--outline); padding-bottom: 5px; margin-top: 0; color: var(--blue); }
-  label { font-size: 12px; color: var(--muted); display: block; margin: 10px 0 4px; }
-  input, select, textarea { width: 100%; padding: 12px; background: var(--panel); border: 1px solid var(--outline); color: #fff; border-radius: 8px; box-sizing: border-box; }
+  body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; padding-bottom: 100px; }
+  
+  /* Sticky Progress Header */
+  #progress-container {
+    position: sticky; top: 0; z-index: 1000; 
+    background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(10px);
+    padding: 12px 20px; border-bottom: 1px solid var(--outline);
+  }
+  .prog-text-row { display: flex; justify-content: space-between; font-size: 11px; font-weight: bold; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .prog-track { height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
+  #progress-bar { height: 100%; width: 0%; background: var(--good); transition: width 0.4s ease; }
+
+  .wrap { padding: 15px; }
+  .section { background: #111827; padding: 18px; border-radius: var(--radius); border: 1px solid var(--outline); margin-bottom: 20px; }
+  
+  .step-badge {
+    background: var(--blue); color: white; width: 22px; height: 22px; 
+    display: inline-flex; align-items: center; justify-content: center; 
+    border-radius: 50%; font-size: 11px; margin-right: 8px; vertical-align: middle;
+  }
+
+  h1 { font-size: 18px; color: var(--good); padding: 20px 15px 5px; margin: 0; }
+  h2 { font-size: 15px; border-bottom: 1px solid var(--outline); padding-bottom: 8px; margin-top: 0; color: var(--blue); display: flex; align-items: center; }
+  label { font-size: 11px; color: var(--muted); display: block; margin: 12px 0 4px; text-transform: uppercase; }
+  input, select, textarea { width: 100%; padding: 12px; background: var(--panel); border: 1px solid var(--outline); color: #fff; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
   
   /* Tracker UI */
-  .camBox { position: relative; background: #000; border-radius: 8px; overflow: hidden; aspect-ratio: 9/16; max-height: 400px; margin: 10px 0; }
+  .camBox { position: relative; background: #000; border-radius: 8px; overflow: hidden; aspect-ratio: 9/16; max-height: 380px; margin: 10px 0; }
   video { width: 100%; height: 100%; object-fit: cover; }
   .overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
-  .crosshair { width: 40px; height: 40px; border: 2px solid var(--good); border-radius: 50%; }
-  .crosshair::before { content:''; position:absolute; top:50%; left:25%; width:50%; height:2px; background:var(--good); }
-  .crosshair::after { content:''; position:absolute; left:50%; top:25%; height:50%; width:2px; background:var(--good); }
+  .crosshair { width: 40px; height: 40px; border: 2px solid var(--good); border-radius: 50%; position: relative; }
+  .crosshair::before { content:''; position:absolute; top:50%; left:20%; width:60%; height:2px; background:var(--good); }
+  .crosshair::after { content:''; position:absolute; left:50%; top:20%; height:60%; width:2px; background:var(--good); }
   
-  .metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; text-align: center; }
-  .metric-card { background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; border: 1px solid var(--outline); }
-  .big-num { font-size: 20px; font-weight: bold; color: var(--good); display: block; }
+  .metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+  .metric-card { background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; border: 1px solid var(--outline); text-align: center; }
+  .big-num { font-size: 22px; font-weight: bold; color: var(--good); display: block; }
   
   .coach-bar { height: 8px; background: #334155; border-radius: 4px; margin: 10px 0; overflow: hidden; }
   .coach-fill { height: 100%; width: 0%; background: var(--good); transition: 0.3s; }
   .coach-fill.bad { background: var(--danger); }
 
-  /* Canvas UI */
-  canvas { background: #fff; border-radius: 8px; width: 100%; touch-action: none; margin-top: 5px; }
+  canvas { background: #fff; border-radius: 8px; width: 100%; touch-action: none; margin-top: 5px; cursor: crosshair; }
   .row { display: flex; gap: 10px; margin-bottom: 10px; }
   .row > div { flex: 1; }
   
-  button { width: 100%; padding: 15px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; margin: 5px 0; }
+  button { width: 100%; padding: 16px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; margin: 5px 0; transition: 0.2s; }
+  button:active { transform: scale(0.98); }
+  button:disabled { opacity: 0.3; filter: grayscale(1); }
   .primary { background: var(--good); color: #000; }
   .secondary { background: var(--blue); color: #fff; }
   .purple { background: var(--purple); color: #fff; }
-  .danger-btn { background: var(--danger); color: #fff; }
+  .danger-btn { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid var(--danger); }
 </style>
 </head>
 <body>
 
-<h1>B2B Ocular Inspection Form + EV Pro</h1>
-
-<div class="section">
-  <h2>Site Info</h2>
-  <label>Client Company</label>
-  <select id="client_company"><option>FINSI</option><option>Greenstrum</option></select>
-  <label>Site ID / Inspector</label>
-  <div class="row">
-    <div><input id="site_id" placeholder="Site ID"></div>
-    <div><input id="inspector_name" placeholder="Inspector"></div>
+<div id="progress-container">
+  <div class="prog-text-row">
+    <span id="progress-step-name">Step 1: Site Setup</span>
+    <span id="progress-percentage">0%</span>
+  </div>
+  <div class="prog-track">
+    <div id="progress-bar"></div>
   </div>
 </div>
 
-<div class="section">
-  <h2>EV Pro Tracker (Live)</h2>
-  <label>Your Height (Eye Level)</label>
-  <select id="heightSel"></select>
-  
-  <div class="camBox">
-    <video id="video" playsinline autoplay muted></video>
-    <div class="overlay"><div class="crosshair"></div></div>
-  </div>
-  
-  <div class="coach-bar"><div id="coachFill" class="coach-fill"></div></div>
-  <p id="coachText" style="font-size: 12px; text-align: center; color: var(--muted);">Enable sensors to start</p>
+<h1>B2B Ocular Inspection Form</h1>
 
-  <div class="metrics">
-    <div class="metric-card"><span>Floor (m)</span><span class="big-num" id="floorM">0.00</span></div>
-    <div class="metric-card"><span>Final (m)</span><span class="big-num" id="finalM">0.00</span></div>
+<div class="wrap">
+  <div class="section">
+    <h2><span class="step-badge">1</span>Site Info</h2>
+    <label>Client Company</label>
+    <select id="client_company" onchange="updateProgress()"><option>FINSI</option><option>Greenstrum</option></select>
+    
+    <label>Site ID / Asset Code</label>
+    <input id="site_id" placeholder="e.g. MNL-001" oninput="updateProgress()">
+    
+    <label>Inspector Name</label>
+    <input id="inspector_name" placeholder="Full Name" oninput="updateProgress()">
   </div>
 
-  <button class="secondary" id="btnEnable">ENABLE CAMERA & SENSORS</button>
-  <div class="row">
-    <button class="primary" id="btnAddPoint" disabled>ADD FLOOR POINT</button>
-    <button class="purple" id="btnAddVert">+ 2.5m VERT</button>
+  <div class="section">
+    <h2><span class="step-badge">2</span>EV Pro Tracker</h2>
+    <label>Your Height (Eye Level)</label>
+    <select id="heightSel" onchange="updateProgress()"></select>
+    
+    <div class="camBox">
+      <video id="video" playsinline autoplay muted></video>
+      <div class="overlay"><div class="crosshair"></div></div>
+    </div>
+    
+    <div class="coach-bar"><div id="coachFill" class="coach-fill"></div></div>
+    <p id="coachText" style="font-size: 11px; text-align: center; color: var(--muted); margin: 5px 0;">Tap "Enable Sensors" to start</p>
+
+    <div class="metrics">
+      <div class="metric-card"><span>Floor (m)</span><span class="big-num" id="floorM">0.00</span></div>
+      <div class="metric-card"><span>Final (m)</span><span class="big-num" id="finalM">0.00</span></div>
+    </div>
+
+    <button class="secondary" id="btnEnable">ENABLE CAMERA & SENSORS</button>
+    <div class="row">
+      <button class="primary" id="btnAddPoint" disabled>ADD FLOOR POINT</button>
+      <button class="purple" id="btnAddVert">+ 2.5m VERT</button>
+    </div>
+    <button class="danger-btn" id="btnReset" style="padding: 8px;">RESET MEASUREMENT</button>
   </div>
-  <button class="danger-btn" id="btnReset">RESET MEASUREMENT</button>
+
+  <div class="section">
+    <h2><span class="step-badge">3</span>Electrical Audit</h2>
+    <label>Main Breaker Size (Amps)</label>
+    <input type="number" id="main_breaker" placeholder="e.g. 40" oninput="updateProgress()">
+    
+    <label>Voltage Readings (L1 to Neutral)</label>
+    <div class="row">
+      <div><input id="v_l1_n" placeholder="Reading" oninput="updateProgress()"></div>
+    </div>
+    <label>Notes / Recommendations</label>
+    <textarea id="recommendation" rows="3" placeholder="Additional findings..." oninput="updateProgress()"></textarea>
+  </div>
+
+  <div class="section">
+    <h2><span class="step-badge">4</span>Finalize & Sign</h2>
+    <label>Sketch (Cable Path Layout)</label>
+    <canvas id="sketch1" height="180"></canvas>
+    <button class="secondary" style="padding: 8px; font-size: 11px;" onclick="clearCanvas('sketch1')">Clear Sketch</button>
+    
+    <label>Electrician Signature</label>
+    <canvas id="signature" height="120"></canvas>
+    <button class="secondary" style="padding: 8px; font-size: 11px;" onclick="clearCanvas('signature')">Clear Signature</button>
+  </div>
+
+  <button class="primary" id="submitBtn" onclick="submitFullForm()" disabled style="font-size: 18px; height: 70px; box-shadow: 0 10px 20px rgba(34, 197, 94, 0.3);">SUBMIT OIF TO CLOUD</button>
+  <p id="errorNote" style="text-align:center; font-size: 12px; color: var(--danger); margin-top: 10px;">Complete all steps to enable submission.</p>
 </div>
-
-<div class="section">
-  <h2>Electrical Checklist</h2>
-  <label>Main Breaker (A)</label>
-  <input type="number" id="main_breaker">
-  <label>Voltage System</label>
-  <select id="system_voltage"><option>230V 1 Phase</option><option>230V 3 Phase</option><option>400V 3 Phase</option></select>
-  
-  <label>Voltage Readings (V)</label>
-  <div class="row">
-    <div><input id="v_l1_n" placeholder="L1-N"></div>
-    <div><input id="v_l2_n" placeholder="L2-N"></div>
-    <div><input id="v_l3_n" placeholder="L3-N"></div>
-  </div>
-</div>
-
-<div class="section">
-  <h2>Layout Sketches</h2>
-  <label>Existing Layout Sketch</label>
-  <canvas id="sketch1" height="200"></canvas>
-  <button class="secondary" onclick="clearCanvas('sketch1')">Clear Sketch</button>
-  
-  <label>Digital Signature</label>
-  <canvas id="signature" height="150"></canvas>
-  <button class="secondary" onclick="clearCanvas('signature')">Clear Signature</button>
-</div>
-
-<button class="primary" onclick="submitFullForm()" style="font-size: 18px; height: 60px;">SUBMIT FULL OIF</button>
 
 <script>
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbznkBTqngel2F66-wWJtVlrZMverQeJdlR1oHHjC1E8vOPdUpKYsWdGlYh_jCS7zrf8Fg/exec";
 
 /** STATE & MATH **/
-let state = { points: [], segments: [], vAdds: 0, pitch: 0, yaw: 0, quality: 'OK' };
+let state = { points: [], segments: [], vAdds: 0, pitch: 0, yaw: 0, hasSketched: false, hasSigned: false };
 const BASE_VERT = 5.0;
 const BUF = 0.15;
 
-// Populate Height Selector
+// Build Height List
 const hSel = document.getElementById('heightSel');
 for(let i=60; i<=75; i++){
     let opt = document.createElement('option');
@@ -132,17 +164,61 @@ for(let i=60; i<=75; i++){
     hSel.appendChild(opt);
 }
 
-/** SENSORS **/
-async function initSensors() {
-    const stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
-    document.getElementById('video').srcObject = stream;
+// Update Progress Logic
+function updateProgress() {
+    let score = 0;
     
-    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-        const res = await DeviceOrientationEvent.requestPermission();
-        if(res==='granted') window.addEventListener('deviceorientation', handleOri);
+    // Step 1: Site Info (25 points)
+    if(document.getElementById('site_id').value.length > 2) score += 10;
+    if(document.getElementById('inspector_name').value.length > 2) score += 15;
+
+    // Step 2: Measurement (25 points)
+    if(state.points.length > 0) score += 25;
+
+    // Step 3: Audit (25 points)
+    if(document.getElementById('main_breaker').value > 0) score += 15;
+    if(document.getElementById('v_l1_n').value.length > 1) score += 10;
+
+    // Step 4: Visuals (25 points)
+    if(state.hasSketched) score += 15;
+    if(state.hasSigned) score += 10;
+
+    // Update UI
+    document.getElementById('progress-bar').style.width = score + "%";
+    document.getElementById('progress-percentage').innerText = score + "%";
+    
+    const stepText = document.getElementById('progress-step-name');
+    const submitBtn = document.getElementById('submitBtn');
+    const errorNote = document.getElementById('errorNote');
+
+    if(score < 25) stepText.innerText = "Step 1: Site Setup";
+    else if(score < 50) stepText.innerText = "Step 2: Measurement";
+    else if(score < 75) stepText.innerText = "Step 3: Electrical Audit";
+    else if(score < 100) stepText.innerText = "Step 4: Signing Off";
+    else stepText.innerText = "Ready to Submit!";
+
+    if(score === 100) {
+      submitBtn.disabled = false;
+      errorNote.style.display = "none";
     } else {
-        window.addEventListener('deviceorientation', handleOri);
+      submitBtn.disabled = true;
+      errorNote.style.display = "block";
     }
+}
+
+/** CAMERA & TRACKER **/
+async function initSensors() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+      document.getElementById('video').srcObject = stream;
+      if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+          const res = await DeviceOrientationEvent.requestPermission();
+          if(res==='granted') window.addEventListener('deviceorientation', handleOri);
+      } else {
+          window.addEventListener('deviceorientation', handleOri);
+      }
+      document.getElementById('btnEnable').style.display = "none";
+    } catch(e) { alert("Camera Access Denied"); }
 }
 
 function handleOri(e) {
@@ -160,7 +236,7 @@ function updateTrackerUI() {
     
     fill.style.width = (p/90*100)+'%';
     fill.className = isOk ? 'coach-fill' : 'coach-fill bad';
-    text.innerText = isOk ? "Ready to measure" : "Adjust angle (15°-75°)";
+    text.innerText = isOk ? "Aim at floor and Add Point" : "Adjust angle (15°-75°)";
     text.style.color = isOk ? "var(--good)" : "var(--danger)";
     btn.disabled = !isOk;
 
@@ -171,7 +247,7 @@ function updateTrackerUI() {
 }
 
 document.getElementById('btnAddPoint').onclick = () => {
-    const h = parseFloat(hSel.value) * 0.94; // Adj for eye level
+    const h = parseFloat(hSel.value) * 0.94;
     const r = h * Math.tan(state.pitch * (Math.PI/180));
     const curr = { r, yaw: state.yaw };
     if(state.points.length > 0) {
@@ -182,55 +258,88 @@ document.getElementById('btnAddPoint').onclick = () => {
     }
     state.points.push(curr);
     updateTrackerUI();
+    updateProgress();
 };
 
-document.getElementById('btnAddVert').onclick = () => { state.vAdds++; updateTrackerUI(); };
-document.getElementById('btnReset').onclick = () => { state.points=[]; state.segments=[]; state.vAdds=0; updateTrackerUI(); };
+document.getElementById('btnAddVert').onclick = () => { state.vAdds++; updateTrackerUI(); updateProgress(); };
+document.getElementById('btnReset').onclick = () => { state.points=[]; state.segments=[]; state.vAdds=0; updateTrackerUI(); updateProgress(); };
 document.getElementById('btnEnable').onclick = initSensors;
 
-/** CANVAS LOGIC **/
+/** CANVAS SIGNATURE/SKETCH **/
 function initCanvas(id) {
     const canvas = document.getElementById(id);
     const ctx = canvas.getContext('2d');
     canvas.width = canvas.offsetWidth;
     let drawing = false;
-    const getPos = (e) => {
-        const rect = canvas.getBoundingClientRect();
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        return { x: clientX - rect.left, y: clientY - rect.top };
+
+    const start = (e) => { 
+      drawing = true; 
+      ctx.beginPath(); 
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+      const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+      ctx.moveTo(x, y); 
     };
-    const start = (e) => { drawing = true; ctx.beginPath(); const p=getPos(e); ctx.moveTo(p.x, p.y); };
-    const move = (e) => { if(!drawing) return; const p=getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); };
+    const move = (e) => { 
+      if(!drawing) return; 
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+      const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+      ctx.lineTo(x, y); ctx.stroke(); 
+      if(id==='sketch1') state.hasSketched = true;
+      if(id==='signature') state.hasSigned = true;
+      updateProgress();
+    };
     const stop = () => drawing = false;
+
     canvas.addEventListener('mousedown', start); canvas.addEventListener('mousemove', move); window.addEventListener('mouseup', stop);
     canvas.addEventListener('touchstart', start); canvas.addEventListener('touchmove', move); window.addEventListener('touchend', stop);
     ctx.lineWidth = 2; ctx.strokeStyle = "#000";
 }
+
 function clearCanvas(id) { 
     const c = document.getElementById(id); 
     c.getContext('2d').clearRect(0,0,c.width,c.height); 
+    if(id==='sketch1') state.hasSketched = false;
+    if(id==='signature') state.hasSigned = false;
+    updateProgress();
 }
+
 initCanvas('sketch1');
 initCanvas('signature');
 
 /** SUBMISSION **/
 async function submitFullForm() {
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.innerText = "UPLOADING TO GOOGLE...";
+
     const payload = {
         timestamp: new Date().toISOString(),
+        client_company: document.getElementById('client_company').value,
         site_id: document.getElementById('site_id').value,
-        inspector: document.getElementById('inspector_name').value,
+        inspector_name: document.getElementById('inspector_name').value,
+        main_breaker: document.getElementById('main_breaker').value,
+        v_l1_n: document.getElementById('v_l1_n').value,
         floor_m: document.getElementById('floorM').innerText,
+        vertical_m: (BASE_VERT + state.vAdds*2.5).toFixed(2),
         final_m: document.getElementById('finalM').innerText,
-        voltage_l1_n: document.getElementById('v_l1_n').value,
-        sketch: document.getElementById('sketch1').toDataURL(),
+        design_recommendation: document.getElementById('recommendation').value,
+        sketch_existing: document.getElementById('sketch1').toDataURL(),
         signature: document.getElementById('signature').toDataURL()
-        // ... add other fields as needed
     };
     
-    alert("Submitting... Check Sheet in a moment.");
     fetch(APPS_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) })
-    .then(() => { alert("Success!"); location.reload(); });
+    .then(() => { 
+      alert("SUCCESS: Job data saved to Google Sheets."); 
+      location.reload(); 
+    })
+    .catch(() => {
+      alert("ERROR: Connection failed.");
+      btn.disabled = false;
+      btn.innerText = "RETRY SUBMISSION";
+    });
 }
 </script>
 </body>
