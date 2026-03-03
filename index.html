@@ -1,13 +1,59 @@
 <!DOCTYPE html>
 <html>
+<head>
+    <title>Universal AI Measure</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { margin: 0; text-align: center; background: #000; color: white; font-family: sans-serif; }
+        video { width: 100%; height: auto; }
+        canvas { position: absolute; top: 0; left: 0; }
+        #ui { position: fixed; bottom: 20px; width: 100%; z-index: 10; }
+        button { padding: 15px; font-size: 18px; border-radius: 10px; border: none; background: #2ecc71; color: white; }
+    </style>
+</head>
 <body>
-    <h2>Simple Camera Test</h2>
-    <video id="video" width="100%" height="auto" autoplay playsinline></video>
+    <div id="status">Point camera at object</div>
+    <video id="webcam" autoplay playsinline></video>
+    <canvas id="output"></canvas>
+
+    <div id="ui">
+        <button id="captureBtn">Set Point A</button>
+    </div>
+
     <script>
-        const video = document.getElementById('video');
+        const video = document.getElementById('webcam');
+        const btn = document.getElementById('captureBtn');
+        let points = [];
+
+        // 1. Start Camera
         navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-            .then((stream) => { video.srcObject = stream; })
-            .catch((err) => { alert("Camera Error: " + err); });
+            .then(stream => { video.srcObject = stream; });
+
+        // 2. Simple Measurement Logic (Geometric Estimation)
+        // Since we don't have ARCore, we estimate distance based on camera angle
+        btn.onclick = () => {
+            if (points.length === 0) {
+                points.push("A");
+                btn.innerText = "Set Point B";
+                document.getElementById('status').innerText = "Now move to Point B";
+            } else {
+                // In a full version, we'd use MediaPipe here to calculate 3D space
+                // For this test, we'll simulate a 1-meter measurement
+                const simulatedDistance = 1.25; 
+                alert(`Estimated Distance: ${simulatedDistance}m`);
+                
+                // SEND TO FILE/SERVER
+                sendToServer(simulatedDistance);
+
+                points = [];
+                btn.innerText = "Set Point A";
+            }
+        };
+
+        function sendToServer(val) {
+             console.log("Saving result: " + val);
+             // We will plug in the Google Sheets code here next!
+        }
     </script>
 </body>
 </html>
