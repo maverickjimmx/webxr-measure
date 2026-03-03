@@ -1,123 +1,98 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>AI Angle Measure + Crosshair</title>
+    <title>EV Cable Measure Tool</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body { margin: 0; text-align: center; background: #000; color: white; font-family: sans-serif; overflow: hidden; }
-        
-        /* Camera Container */
         #camera-container { position: relative; width: 100vw; height: 100vh; }
         video { width: 100%; height: 100%; object-fit: cover; }
-
-        /* The Crosshair */
-        #crosshair {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 40px;
-            height: 40px;
-            transform: translate(-50%, -50%);
-            pointer-events: none; /* Let clicks pass through */
-        }
-        .line-h { position: absolute; top: 19px; width: 100%; height: 2px; background: #2ecc71; }
-        .line-v { position: absolute; left: 19px; height: 100%; width: 2px; background: #2ecc71; }
-        .circle { position: absolute; top: 10px; left: 10px; width: 18px; height: 18px; border: 2px solid #2ecc71; border-radius: 50%; }
-
-        /* UI Elements */
-        #status { padding: 15px; background: rgba(0,0,0,0.7); position: fixed; top: 0; width: 100%; z-index: 10; font-size: 14px; }
-        #angle-display { color: #f1c40f; font-size: 20px; font-weight: bold; }
-        
+        #crosshair { position: absolute; top: 50%; left: 50%; width: 40px; height: 40px; transform: translate(-50%, -50%); pointer-events: none; }
+        .line-h { position: absolute; top: 19px; width: 100%; height: 2px; background: #3498db; }
+        .line-v { position: absolute; left: 19px; height: 100%; width: 2px; background: #3498db; }
+        #status { padding: 15px; background: rgba(0,0,0,0.8); position: fixed; top: 0; width: 100%; z-index: 10; font-size: 16px; color: #3498db; }
         #ui { position: fixed; bottom: 30px; width: 100%; z-index: 10; display: flex; flex-direction: column; align-items: center; }
-        button { 
-            padding: 18px; width: 85%; font-size: 20px; font-weight: bold;
-            border-radius: 50px; border: none; background: #2ecc71; color: white; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3); cursor: pointer;
-        }
-        button:active { transform: scale(0.98); background: #27ae60; }
+        button { padding: 20px; width: 85%; font-size: 20px; font-weight: bold; border-radius: 50px; border: none; background: #3498db; color: white; cursor: pointer; }
+        #angle-info { font-size: 12px; color: #bdc3c7; margin-top: 5px; }
     </style>
 </head>
 <body>
 
-    <div id="status">
-        AIM AT BASE OF OBJECT<br>
-        Current Tilt: <span id="angle-display">0</span>°
-    </div>
+    <div id="status">STEP 1: AIM AT CHARGER LOCATION</div>
 
     <div id="camera-container">
         <video id="webcam" autoplay playsinline></video>
-        
-        <div id="crosshair">
-            <div class="line-h"></div>
-            <div class="line-v"></div>
-            <div class="circle"></div>
-        </div>
+        <div id="crosshair"><div class="line-h"></div><div class="line-v"></div></div>
     </div>
 
     <div id="ui">
-        <button id="captureBtn">MEASURE & SAVE</button>
+        <button id="mainBtn">SET POINT A (CHARGER)</button>
+        <div id="angle-info">Tilt: <span id="tiltVal">0</span>° | Rot: <span id="rotVal">0</span>°</div>
     </div>
 
     <script>
         const video = document.getElementById('webcam');
-        const btn = document.getElementById('captureBtn');
-        const angleDisplay = document.getElementById('angle-display');
+        const btn = document.getElementById('mainBtn');
+        const status = document.getElementById('status');
         
+        let cameraHeight = 1.5; // Update this to your eye-level height in meters
+        let points = [];
         let currentTilt = 0;
-        
-        // IMPORTANT: Set this to your eye-level height in meters
-        const cameraHeight = 1.6; 
+        let currentRotation = 0;
 
-        // 1. Start Camera
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-            .then(stream => { video.srcObject = stream; })
-            .catch(err => alert("Camera error: " + err));
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(s => video.srcObject = s);
 
-        // 2. Capture Tilt Logic
-        if (window.DeviceOrientationEvent) {
-            window.addEventListener('deviceorientation', (event) => {
-                // 'beta' represents the front-to-back tilt
-                currentTilt = event.beta; 
-                angleDisplay.innerText = Math.round(currentTilt);
-            }, true);
-        } else {
-            alert("Your device doesn't support orientation sensors.");
-        }
+        window.addEventListener('deviceorientation', (e) => {
+            currentTilt = e.beta; // Pitch
+            currentRotation = e.alpha; // Compass heading
+            document.getElementById('tiltVal').innerText = Math.round(currentTilt);
+            document.getElementById('rotVal').innerText = Math.round(currentRotation);
+        }, true);
 
-        // 3. Calculation & Export
         btn.onclick = () => {
-            // Angle math: convert degrees to radians
-            let angleInRadians = currentTilt * (Math.PI / 180);
-            
-            // d = h * tan(theta)
-            let calculatedDistance = Math.abs(cameraHeight * Math.tan(angleInRadians)).toFixed(2);
-            
-            // Safety check for flat angles
-            if (currentTilt > 80 || calculatedDistance > 15) {
-                alert("Angle too steep. Aim closer to the floor.");
-                return;
-            }
+            // Calculate distance from YOU to the floor point
+            let angleRad = currentTilt * (Math.PI / 180);
+            let distToPoint = Math.abs(cameraHeight * Math.tan(angleRad));
 
-            alert(`Distance: ${calculatedDistance} meters`);
-            sendToServer(calculatedDistance);
+            points.push({ d: distToPoint, r: currentRotation });
+
+            if (points.length === 1) {
+                status.innerText = "STEP 2: AIM AT METER BOX";
+                btn.innerText = "SET POINT B (METER)";
+                btn.style.background = "#e67e22";
+            } else {
+                calculateFinalCable();
+            }
         };
 
-        function sendToServer(val) {
-            const scriptURL = 'YOUR_GOOGLE_SCRIPT_URL_HERE'; // REPLACE WITH YOUR /exec URL
-            
-            const data = {
-                clientId: "JimmX_Collector",
-                measurement: val
-            };
+        function calculateFinalCable() {
+            let p1 = points[0];
+            let p2 = points[1];
 
+            // Law of Cosines to find distance between two points using rotation difference
+            let angleDiff = Math.abs(p1.r - p2.r) * (Math.PI / 180);
+            let cableLength = Math.sqrt(Math.pow(p1.d, 2) + Math.pow(p2.d, 2) - 2 * p1.d * p2.d * Math.cos(angleDiff));
+
+            // Add 10% safety margin for cable bends/routing
+            let finalLength = (cableLength * 1.1).toFixed(2);
+
+            alert(`Required Cable: ${finalLength} meters (includes 10% slack)`);
+            sendToServer(finalLength);
+
+            // Reset
+            points = [];
+            status.innerText = "STEP 1: AIM AT CHARGER LOCATION";
+            btn.innerText = "SET POINT A (CHARGER)";
+            btn.style.background = "#3498db";
+        }
+
+        function sendToServer(val) {
+            const scriptURL = 'https://script.google.com/macros/s/AKfycbwLI_UP4Zjn2WoKhojrOYKMkAQx7ximSuo1iJY2m9UhEZVe007qa5PUE3iRTVGFxWtp/exec'; 
             fetch(scriptURL, {
                 method: 'POST',
                 mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            }).then(() => {
-                alert("Record updated in Google Sheets!");
-            }).catch(err => alert("Connection error: " + err));
+                body: JSON.stringify({ clientId: "EV_Install_Job", measurement: val })
+            }).then(() => alert("Saved to Google Sheets."));
         }
     </script>
 </body>
