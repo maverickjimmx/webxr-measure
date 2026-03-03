@@ -1,26 +1,61 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>AI Angle Measure</title>
+    <title>AI Angle Measure + Crosshair</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { margin: 0; text-align: center; background: #000; color: white; font-family: sans-serif; }
-        video { width: 100%; height: auto; }
-        #ui { position: fixed; bottom: 20px; width: 100%; z-index: 10; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-        button { padding: 15px; width: 80%; font-size: 18px; border-radius: 10px; border: none; background: #2ecc71; color: white; cursor: pointer; }
-        #status { padding: 10px; background: rgba(0,0,0,0.7); position: fixed; top: 0; width: 100%; z-index: 10; }
-        #angle-display { color: #f1c40f; font-weight: bold; }
+        body { margin: 0; text-align: center; background: #000; color: white; font-family: sans-serif; overflow: hidden; }
+        
+        /* Camera Container */
+        #camera-container { position: relative; width: 100vw; height: 100vh; }
+        video { width: 100%; height: 100%; object-fit: cover; }
+
+        /* The Crosshair */
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 40px;
+            height: 40px;
+            transform: translate(-50%, -50%);
+            pointer-events: none; /* Let clicks pass through */
+        }
+        .line-h { position: absolute; top: 19px; width: 100%; height: 2px; background: #2ecc71; }
+        .line-v { position: absolute; left: 19px; height: 100%; width: 2px; background: #2ecc71; }
+        .circle { position: absolute; top: 10px; left: 10px; width: 18px; height: 18px; border: 2px solid #2ecc71; border-radius: 50%; }
+
+        /* UI Elements */
+        #status { padding: 15px; background: rgba(0,0,0,0.7); position: fixed; top: 0; width: 100%; z-index: 10; font-size: 14px; }
+        #angle-display { color: #f1c40f; font-size: 20px; font-weight: bold; }
+        
+        #ui { position: fixed; bottom: 30px; width: 100%; z-index: 10; display: flex; flex-direction: column; align-items: center; }
+        button { 
+            padding: 18px; width: 85%; font-size: 20px; font-weight: bold;
+            border-radius: 50px; border: none; background: #2ecc71; color: white; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3); cursor: pointer;
+        }
+        button:active { transform: scale(0.98); background: #27ae60; }
     </style>
 </head>
 <body>
+
     <div id="status">
-        Angle: <span id="angle-display">0</span>°<br>
-        <small>Tilt phone to aim at the base of the object</small>
+        AIM AT BASE OF OBJECT<br>
+        Current Tilt: <span id="angle-display">0</span>°
     </div>
-    <video id="webcam" autoplay playsinline></video>
+
+    <div id="camera-container">
+        <video id="webcam" autoplay playsinline></video>
+        
+        <div id="crosshair">
+            <div class="line-h"></div>
+            <div class="line-v"></div>
+            <div class="circle"></div>
+        </div>
+    </div>
 
     <div id="ui">
-        <button id="captureBtn">Capture Measurement</button>
+        <button id="captureBtn">MEASURE & SAVE</button>
     </div>
 
     <script>
@@ -29,32 +64,37 @@
         const angleDisplay = document.getElementById('angle-display');
         
         let currentTilt = 0;
-        const cameraHeight = 1.6; // ESTIMATE: Your eye-level height in meters (change this to yours!)
+        
+        // IMPORTANT: Set this to your eye-level height in meters
+        const cameraHeight = 1.6; 
 
         // 1. Start Camera
         navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-            .then(stream => { video.srcObject = stream; });
+            .then(stream => { video.srcObject = stream; })
+            .catch(err => alert("Camera error: " + err));
 
-        // 2. Get Phone Tilt (Pitch)
-        window.addEventListener('deviceorientation', (event) => {
-            // 'beta' is the front-to-back tilt in degrees
-            currentTilt = event.beta; 
-            angleDisplay.innerText = Math.round(currentTilt);
-        });
+        // 2. Capture Tilt Logic
+        if (window.DeviceOrientationEvent) {
+            window.addEventListener('deviceorientation', (event) => {
+                // 'beta' represents the front-to-back tilt
+                currentTilt = event.beta; 
+                angleDisplay.innerText = Math.round(currentTilt);
+            }, true);
+        } else {
+            alert("Your device doesn't support orientation sensors.");
+        }
 
-        // 3. The Math Logic
+        // 3. Calculation & Export
         btn.onclick = () => {
-            // We convert degrees to radians for the math formula
-            // We adjust the angle because 90 is vertical. 
-            // We want the angle relative to the ground.
-            let angleInRadians = (currentTilt) * (Math.PI / 180);
+            // Angle math: convert degrees to radians
+            let angleInRadians = currentTilt * (Math.PI / 180);
             
-            // Calculate distance: Height * Tan(Angle)
-            // Note: This math assumes you are standing and aiming at the floor
+            // d = h * tan(theta)
             let calculatedDistance = Math.abs(cameraHeight * Math.tan(angleInRadians)).toFixed(2);
             
-            if (calculatedDistance > 20) {
-                alert("Angle too flat! Try aiming closer to your feet first.");
+            // Safety check for flat angles
+            if (currentTilt > 80 || calculatedDistance > 15) {
+                alert("Angle too steep. Aim closer to the floor.");
                 return;
             }
 
@@ -63,15 +103,21 @@
         };
 
         function sendToServer(val) {
-            const scriptURL = 'https://script.google.com/macros/s/AKfycbwLI_UP4Zjn2WoKhojrOYKMkAQx7ximSuo1iJY2m9UhEZVe007qa5PUE3iRTVGFxWtp/exec'; // <--- PUT YOUR URL HERE
-            const data = { clientId: "JimmX_Angle_Test", measurement: val };
+            const scriptURL = 'YOUR_GOOGLE_SCRIPT_URL_HERE'; // REPLACE WITH YOUR /exec URL
+            
+            const data = {
+                clientId: "JimmX_Collector",
+                measurement: val
+            };
 
             fetch(scriptURL, {
                 method: 'POST',
                 mode: 'no-cors',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
-            }).then(() => alert("Saved to Sheets!"));
+            }).then(() => {
+                alert("Record updated in Google Sheets!");
+            }).catch(err => alert("Connection error: " + err));
         }
     </script>
 </body>
