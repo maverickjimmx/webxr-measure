@@ -8,7 +8,9 @@
         video { width: 100%; height: auto; }
         canvas { position: absolute; top: 0; left: 0; }
         #ui { position: fixed; bottom: 20px; width: 100%; z-index: 10; }
-        button { padding: 15px; font-size: 18px; border-radius: 10px; border: none; background: #2ecc71; color: white; }
+        button { padding: 15px; font-size: 18px; border-radius: 10px; border: none; background: #2ecc71; color: white; cursor: pointer; }
+        button:active { background: #27ae60; }
+        #status { padding: 10px; background: rgba(0,0,0,0.7); position: fixed; top: 0; width: 100%; z-index: 10; }
     </style>
 </head>
 <body>
@@ -27,32 +29,58 @@
 
         // 1. Start Camera
         navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-            .then(stream => { video.srcObject = stream; });
+            .then(stream => { video.srcObject = stream; })
+            .catch(err => alert("Camera error: " + err));
 
-        // 2. Simple Measurement Logic (Geometric Estimation)
-        // Since we don't have ARCore, we estimate distance based on camera angle
+        // 2. Simple Measurement Logic
         btn.onclick = () => {
             if (points.length === 0) {
                 points.push("A");
                 btn.innerText = "Set Point B";
                 document.getElementById('status').innerText = "Now move to Point B";
             } else {
-                // In a full version, we'd use MediaPipe here to calculate 3D space
-                // For this test, we'll simulate a 1-meter measurement
+                // Currently using a simulated distance for testing
                 const simulatedDistance = 1.25; 
+                
+                // Show the result to the user
                 alert(`Estimated Distance: ${simulatedDistance}m`);
                 
-                // SEND TO FILE/SERVER
+                // TRIGGER SEND TO GOOGLE SHEETS
                 sendToServer(simulatedDistance);
 
+                // Reset for next measurement
                 points = [];
                 btn.innerText = "Set Point A";
+                document.getElementById('status').innerText = "Point camera at object";
             }
         };
 
+        // 3. Google Sheets Integration
         function sendToServer(val) {
-             console.log("Saving result: " + val);
-             // We will plug in the Google Sheets code here next!
+            // REPLACE THE URL BELOW WITH YOUR GOOGLE APPS SCRIPT URL
+            const scriptURL = 'https://script.google.com/macros/s/AKfycbwLI_UP4Zjn2WoKhojrOYKMkAQx7ximSuo1iJY2m9UhEZVe007qa5PUE3iRTVGFxWtp/exec'; 
+            
+            const data = {
+                clientId: "JimmX_Mobile_Test",
+                measurement: val
+            };
+
+            console.log("Attempting to save result: " + val);
+
+            fetch(scriptURL, {
+                method: 'POST',
+                mode: 'no-cors', // Essential for Google Apps Script
+                cache: 'no-cache',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(() => {
+                alert("Success! Measurement saved to Google Sheets.");
+            })
+            .catch(error => {
+                console.error('Error!', error.message);
+                alert("Save failed. Check console for details.");
+            });
         }
     </script>
 </body>
