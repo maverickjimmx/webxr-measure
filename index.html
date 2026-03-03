@@ -1,27 +1,36 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>EV Pro Cable Tracker</title>
+    <title>EV Pro Tracker - Client Mode</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { margin: 0; text-align: center; background: #000; color: white; font-family: sans-serif; overflow: hidden; }
+        body { margin: 0; text-align: center; background: #1a1a1a; color: white; font-family: sans-serif; overflow: hidden; }
         #camera-container { position: relative; width: 100vw; height: 100vh; }
         video { width: 100%; height: 100%; object-fit: cover; }
+        
+        /* UI Overlays */
+        #header-ui { position: fixed; top: 0; width: 100%; z-index: 10; background: rgba(0,0,0,0.8); padding: 10px 0; border-bottom: 2px solid #3498db; }
+        #job-input { padding: 10px; width: 80%; border-radius: 5px; border: 1px solid #3498db; background: #222; color: white; font-size: 16px; margin-bottom: 5px; }
+        
         #crosshair { position: absolute; top: 50%; left: 50%; width: 30px; height: 30px; transform: translate(-50%, -50%); pointer-events: none; border: 2px solid #3498db; border-radius: 50%; }
-        #status { padding: 15px; background: rgba(0,0,0,0.8); position: fixed; top: 0; width: 100%; z-index: 10; border-bottom: 2px solid #3498db; }
-        #total-display { font-size: 28px; color: #2ecc71; font-weight: bold; }
-        #ui { position: fixed; bottom: 20px; width: 100%; z-index: 10; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-        .btn { padding: 18px; width: 90%; font-size: 16px; font-weight: bold; border-radius: 12px; border: none; cursor: pointer; color: white; }
+        #crosshair::after { content: ''; position: absolute; top: 14px; left: 0; width: 100%; height: 2px; background: #3498db; }
+        #crosshair::before { content: ''; position: absolute; left: 14px; top: 0; height: 100%; width: 2px; background: #3498db; }
+
+        #total-display { font-size: 24px; color: #2ecc71; font-weight: bold; margin-top: 5px; }
+        
+        #ui-controls { position: fixed; bottom: 20px; width: 100%; z-index: 10; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        .btn { padding: 16px; width: 90%; font-size: 16px; font-weight: bold; border-radius: 12px; border: none; cursor: pointer; color: white; transition: 0.2s; }
         #addBtn { background: #3498db; }
-        #vertBtn { background: #9b59b6; } /* Purple for Vertical */
+        #vertBtn { background: #9b59b6; }
         #finishBtn { background: #2ecc71; }
+        .btn:active { transform: scale(0.95); opacity: 0.8; }
     </style>
 </head>
 <body>
 
-    <div id="status">
-        TOTAL CABLE: <span id="total-display">0.00</span>m<br>
-        <small id="instruction">Aim at Point A and click 'Add'</small>
+    <div id="header-ui">
+        <input type="text" id="job-input" placeholder="Enter Customer Name or Job #" autocomplete="off">
+        <div id="total-display">TOTAL: <span id="total-val">0.00</span>m</div>
     </div>
 
     <div id="camera-container">
@@ -29,18 +38,18 @@
         <div id="crosshair"></div>
     </div>
 
-    <div id="ui">
+    <div id="ui-controls">
         <button id="addBtn" class="btn">ADD FLOOR POINT</button>
-        <button id="vertBtn" class="btn">+ ADD 2.5m VERTICAL RUN</button>
+        <button id="vertBtn" class="btn">+ ADD 2.5m VERTICAL</button>
         <button id="finishBtn" class="btn">FINISH & SAVE TO SHEET</button>
     </div>
 
     <script>
         const video = document.getElementById('webcam');
-        const totalDisplay = document.getElementById('total-display');
-        const instruction = document.getElementById('instruction');
+        const totalDisplay = document.getElementById('total-val');
+        const jobInput = document.getElementById('job-input');
         
-        let cameraHeight = 1.6; // Update to your eye-level height
+        let cameraHeight = 1.6; // Your eye-level height
         let totalPathLength = 0;
         let lastPoint = null;
         let currentTilt = 0;
@@ -53,7 +62,7 @@
             currentRotation = e.alpha;
         }, true);
 
-        // FLOOR MEASUREMENT
+        // Add Ground Segment
         document.getElementById('addBtn').onclick = () => {
             let angleRad = currentTilt * (Math.PI / 180);
             let distToPoint = Math.abs(cameraHeight * Math.tan(angleRad));
@@ -64,40 +73,49 @@
                 let segmentLength = Math.sqrt(Math.pow(lastPoint.d, 2) + Math.pow(newPoint.d, 2) - 2 * lastPoint.d * newPoint.d * Math.cos(angleDiff));
                 totalPathLength += segmentLength;
                 totalDisplay.innerText = totalPathLength.toFixed(2);
-                instruction.innerText = "Segment Added!";
-            } else {
-                instruction.innerText = "Point A set. Now aim at Point B.";
             }
             lastPoint = newPoint;
         };
 
-        // VERTICAL ADDER
+        // Add Vertical Run
         document.getElementById('vertBtn').onclick = () => {
-            totalPathLength += 2.5; // Adds standard wall height
+            totalPathLength += 2.5;
             totalDisplay.innerText = totalPathLength.toFixed(2);
-            alert("Added 2.5m vertical drop/rise.");
         };
 
+        // Final Save
         document.getElementById('finishBtn').onclick = () => {
+            const jobName = jobInput.value.trim();
+            if (!jobName) return alert("Please enter a Customer Name first!");
             if (totalPathLength === 0) return alert("No measurement recorded.");
             
-            let finalValue = (totalPathLength * 1.10).toFixed(2); // 10% safety margin
+            let finalValue = (totalPathLength * 1.10).toFixed(2); // 10% slack
             
-            if(confirm(`Total: ${finalValue}m (incl. 10% slack). Save?`)) {
-                sendToServer(finalValue);
-                totalPathLength = 0;
-                lastPoint = null;
-                totalDisplay.innerText = "0.00";
+            if(confirm(`Save ${finalValue}m for ${jobName}?`)) {
+                sendToServer(jobName, finalValue);
             }
         };
 
-        function sendToServer(val) {
-            const scriptURL = 'https://script.google.com/macros/s/AKfycbwLI_UP4Zjn2WoKhojrOYKMkAQx7ximSuo1iJY2m9UhEZVe007qa5PUE3iRTVGFxWtp/exec'; 
+        function sendToServer(job, val) {
+            const scriptURL = 'https://script.google.com/macros/s/AKfycbwLI_UP4Zjn2WoKhojrOYKMkAQx7ximSuo1iJY2m9UhEZVe007qa5PUE3iRTVGFxWtp/exec'; // <--- PUT YOUR URL HERE
+            
+            const payload = {
+                clientId: job,
+                measurement: val
+            };
+
             fetch(scriptURL, {
                 method: 'POST',
                 mode: 'no-cors',
-                body: JSON.stringify({ clientId: "EV_Job_Site", measurement: val })
-            }).then(() => alert("Saved to Google Sheets!"));
+                body: JSON.stringify(payload)
+            }).then(() => {
+                alert("Successfully saved!");
+                // Clear for next job
+                totalPathLength = 0;
+                lastPoint = null;
+                totalDisplay.innerText = "0.00";
+                jobInput.value = "";
+            }).catch(err => alert("Error: " + err));
         }
     </script>
 </body>
