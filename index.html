@@ -1,86 +1,77 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Universal AI Measure</title>
+    <title>AI Angle Measure</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body { margin: 0; text-align: center; background: #000; color: white; font-family: sans-serif; }
         video { width: 100%; height: auto; }
-        canvas { position: absolute; top: 0; left: 0; }
-        #ui { position: fixed; bottom: 20px; width: 100%; z-index: 10; }
-        button { padding: 15px; font-size: 18px; border-radius: 10px; border: none; background: #2ecc71; color: white; cursor: pointer; }
-        button:active { background: #27ae60; }
+        #ui { position: fixed; bottom: 20px; width: 100%; z-index: 10; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        button { padding: 15px; width: 80%; font-size: 18px; border-radius: 10px; border: none; background: #2ecc71; color: white; cursor: pointer; }
         #status { padding: 10px; background: rgba(0,0,0,0.7); position: fixed; top: 0; width: 100%; z-index: 10; }
+        #angle-display { color: #f1c40f; font-weight: bold; }
     </style>
 </head>
 <body>
-    <div id="status">Point camera at object</div>
+    <div id="status">
+        Angle: <span id="angle-display">0</span>°<br>
+        <small>Tilt phone to aim at the base of the object</small>
+    </div>
     <video id="webcam" autoplay playsinline></video>
-    <canvas id="output"></canvas>
 
     <div id="ui">
-        <button id="captureBtn">Set Point A</button>
+        <button id="captureBtn">Capture Measurement</button>
     </div>
 
     <script>
         const video = document.getElementById('webcam');
         const btn = document.getElementById('captureBtn');
-        let points = [];
+        const angleDisplay = document.getElementById('angle-display');
+        
+        let currentTilt = 0;
+        const cameraHeight = 1.6; // ESTIMATE: Your eye-level height in meters (change this to yours!)
 
         // 1. Start Camera
         navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-            .then(stream => { video.srcObject = stream; })
-            .catch(err => alert("Camera error: " + err));
+            .then(stream => { video.srcObject = stream; });
 
-        // 2. Simple Measurement Logic
+        // 2. Get Phone Tilt (Pitch)
+        window.addEventListener('deviceorientation', (event) => {
+            // 'beta' is the front-to-back tilt in degrees
+            currentTilt = event.beta; 
+            angleDisplay.innerText = Math.round(currentTilt);
+        });
+
+        // 3. The Math Logic
         btn.onclick = () => {
-            if (points.length === 0) {
-                points.push("A");
-                btn.innerText = "Set Point B";
-                document.getElementById('status').innerText = "Now move to Point B";
-            } else {
-                // Currently using a simulated distance for testing
-                const simulatedDistance = 1.25; 
-                
-                // Show the result to the user
-                alert(`Estimated Distance: ${simulatedDistance}m`);
-                
-                // TRIGGER SEND TO GOOGLE SHEETS
-                sendToServer(simulatedDistance);
-
-                // Reset for next measurement
-                points = [];
-                btn.innerText = "Set Point A";
-                document.getElementById('status').innerText = "Point camera at object";
+            // We convert degrees to radians for the math formula
+            // We adjust the angle because 90 is vertical. 
+            // We want the angle relative to the ground.
+            let angleInRadians = (currentTilt) * (Math.PI / 180);
+            
+            // Calculate distance: Height * Tan(Angle)
+            // Note: This math assumes you are standing and aiming at the floor
+            let calculatedDistance = Math.abs(cameraHeight * Math.tan(angleInRadians)).toFixed(2);
+            
+            if (calculatedDistance > 20) {
+                alert("Angle too flat! Try aiming closer to your feet first.");
+                return;
             }
+
+            alert(`Distance: ${calculatedDistance} meters`);
+            sendToServer(calculatedDistance);
         };
 
-        // 3. Google Sheets Integration
         function sendToServer(val) {
-            // REPLACE THE URL BELOW WITH YOUR GOOGLE APPS SCRIPT URL
-            const scriptURL = 'https://script.google.com/macros/s/AKfycbwLI_UP4Zjn2WoKhojrOYKMkAQx7ximSuo1iJY2m9UhEZVe007qa5PUE3iRTVGFxWtp/exec'; 
-            
-            const data = {
-                clientId: "JimmX_Mobile_Test",
-                measurement: val
-            };
-
-            console.log("Attempting to save result: " + val);
+            const scriptURL = 'https://script.google.com/macros/s/AKfycbwLI_UP4Zjn2WoKhojrOYKMkAQx7ximSuo1iJY2m9UhEZVe007qa5PUE3iRTVGFxWtp/exec'; // <--- PUT YOUR URL HERE
+            const data = { clientId: "JimmX_Angle_Test", measurement: val };
 
             fetch(scriptURL, {
                 method: 'POST',
-                mode: 'no-cors', // Essential for Google Apps Script
-                cache: 'no-cache',
+                mode: 'no-cors',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
-            })
-            .then(() => {
-                alert("Success! Measurement saved to Google Sheets.");
-            })
-            .catch(error => {
-                console.error('Error!', error.message);
-                alert("Save failed. Check console for details.");
-            });
+            }).then(() => alert("Saved to Sheets!"));
         }
     </script>
 </body>
