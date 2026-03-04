@@ -23,7 +23,7 @@
   #progress-bar { height: 100%; width: 0%; background: var(--good); transition: width 0.4s ease; }
 
   .wrap { padding: 15px; max-width: 600px; margin: auto; }
-  .section { background: #111827; padding: 18px; border-radius: var(--radius); border: 1px solid var(--outline); margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+  .section { background: #111827; padding: 18px; border-radius: var(--radius); border: 1px solid var(--outline); margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); transition: 0.3s; }
   
   .step-badge {
     background: var(--blue); color: white; width: 22px; height: 22px; 
@@ -34,7 +34,14 @@
   h1 { font-size: 18px; color: var(--good); padding: 20px 15px 5px; margin: 0; text-align: center; }
   h2 { font-size: 15px; border-bottom: 1px solid var(--outline); padding-bottom: 8px; margin-top: 0; color: var(--blue); display: flex; align-items: center; }
   label { font-size: 10px; color: var(--muted); display: block; margin: 12px 0 4px; text-transform: uppercase; font-weight: bold; }
-  input, select, textarea { width: 100%; padding: 12px; background: var(--panel); border: 1px solid var(--outline); color: #fff; border-radius: 8px; box-sizing: border-box; font-size: 14px; outline: none; }
+  
+  /* Input Styling with Glow transition */
+  input, select, textarea { 
+    width: 100%; padding: 12px; background: var(--panel); 
+    border: 1px solid var(--outline); color: #fff; border-radius: 8px; 
+    box-sizing: border-box; font-size: 14px; outline: none;
+    transition: box-shadow 0.3s ease, border-color 0.3s ease;
+  }
   input:focus { border-color: var(--blue); }
   
   /* Tracker UI */
@@ -59,11 +66,16 @@
   
   button { width: 100%; padding: 16px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; margin: 5px 0; transition: 0.2s; font-size: 14px; }
   button:active { transform: scale(0.98); }
-  button:disabled { opacity: 0.3; filter: grayscale(1); cursor: not-allowed; }
   .primary { background: var(--good); color: #000; }
   .secondary { background: var(--blue); color: #fff; }
   .purple { background: var(--purple); color: #fff; }
   .danger-btn { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid var(--danger); }
+  
+  /* Validation Glow Effect */
+  .invalid-glow {
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.5) !important;
+    border-color: var(--danger) !important;
+  }
 </style>
 </head>
 <body>
@@ -79,7 +91,7 @@
 <h1>BOSS EV B2B Inspection</h1>
 
 <div class="wrap">
-  <div class="section">
+  <div class="section" id="sec-1">
     <h2><span class="step-badge">1</span>B2B Job Header</h2>
     <label>Client Company</label>
     <select id="client_company" onchange="updateProgress()">
@@ -98,7 +110,7 @@
     </div>
   </div>
 
-  <div class="section">
+  <div class="section" id="sec-2">
     <h2><span class="step-badge">2</span>Client Information</h2>
     <label>Full Client Name</label><input id="client_name" oninput="updateProgress()">
     <label>Installation Address</label><input id="address" oninput="updateProgress()">
@@ -112,7 +124,7 @@
     </select>
   </div>
 
-  <div class="section">
+  <div class="section" id="sec-3">
     <h2><span class="step-badge">3</span>Cable Route Measurement</h2>
     <label>Device Height (Eye Level)</label>
     <select id="heightSel" onchange="updateProgress()"></select>
@@ -137,7 +149,7 @@
     <button class="danger-btn" id="btnReset" style="padding: 8px; font-size: 11px;">RESET DISTANCE</button>
   </div>
 
-  <div class="section">
+  <div class="section" id="sec-4">
     <h2><span class="step-badge">4</span>Electrical Checklist</h2>
     <div class="row">
       <div><label>Charger Type</label><select id="charger_type"><option>AC</option><option>DC</option></select></div>
@@ -146,11 +158,6 @@
     <label>Main Breaker Size (Amps)</label>
     <input type="number" id="main_breaker" placeholder="e.g. 60" oninput="updateProgress()">
     
-    <div class="row">
-      <div><label>Spare Breaker?</label><select id="spare_breaker"><option>None</option><option>Yes</option></select></div>
-      <div><label>Busbar Space?</label><select id="busbar_space"><option>None</option><option>Yes</option></select></div>
-    </div>
-
     <label>Voltage Readings (V)</label>
     <div class="row">
       <div><label>L1-N</label><input id="v_l1_n" oninput="updateProgress()"></div>
@@ -166,7 +173,7 @@
     </div>
   </div>
 
-  <div class="section">
+  <div class="section" id="sec-5">
     <h2><span class="step-badge">5</span>Review & Sign</h2>
     <label>Cable Path Sketch (Proposed)</label>
     <canvas id="sketch1" height="200"></canvas>
@@ -180,19 +187,17 @@
     <textarea id="recommendation" rows="3" oninput="updateProgress()"></textarea>
   </div>
 
-  <button class="primary" id="submitBtn" onclick="submitFullForm()" disabled style="font-size: 18px; height: 75px;">SUBMIT TO GOOGLE SHEETS</button>
-  <p id="errorNote" style="text-align:center; font-size: 11px; color: var(--danger); margin-top: 10px;">Progress must be 100% to submit.</p>
+  <button class="primary" id="submitBtn" onclick="submitFullForm()" style="font-size: 18px; height: 75px; background: #334155;">SUBMIT TO GOOGLE SHEETS</button>
+  <p id="errorNote" style="text-align:center; font-size: 11px; color: var(--danger); margin-top: 10px;">Form is incomplete.</p>
 </div>
 
 <script>
-// UPDATE THIS URL WITH YOUR DEPLOYED GOOGLE APPS SCRIPT URL
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbznkBTqngel2F66-wWJtVlrZMverQeJdlR1oHHjC1E8vOPdUpKYsWdGlYh_jCS7zrf8Fg/exec";
 
 let state = { points: [], segments: [], vAdds: 0, pitch: 0, yaw: 0, hasSketched: false, hasSigned: false };
 const BASE_VERT = 5.0;
 const BUF = 0.15;
 
-// Build Height List
 const hSel = document.getElementById('heightSel');
 for(let i=60; i<=75; i++){
     let opt = document.createElement('option');
@@ -202,34 +207,104 @@ for(let i=60; i<=75; i++){
     hSel.appendChild(opt);
 }
 
+/** SMART VALIDATION LOGIC **/
 function updateProgress() {
     let score = 0;
-    // Section 1 & 2 (30 pts)
-    if(document.getElementById('site_id').value.length > 2) score += 10;
-    if(document.getElementById('inspector_name').value.length > 2) score += 10;
-    if(document.getElementById('client_name').value.length > 2) score += 10;
-    // Section 3 (20 pts)
-    if(state.points.length > 0) score += 20;
-    // Section 4 (25 pts)
-    if(document.getElementById('main_breaker').value > 0) score += 15;
-    if(document.getElementById('v_l1_n').value.length > 1) score += 10;
-    // Section 5 (25 pts)
-    if(state.hasSketched) score += 15;
-    if(state.hasSigned) score += 10;
+    let missing = [];
 
+    // Validation checks
+    const site = document.getElementById('site_id');
+    const insp = document.getElementById('inspector_name');
+    const client = document.getElementById('client_name');
+    const breaker = document.getElementById('main_breaker');
+    const volt = document.getElementById('v_l1_n');
+
+    if(site.value.trim().length > 1) { score += 10; site.classList.remove('invalid-glow'); } else missing.push("Site ID");
+    if(insp.value.trim().length > 1) { score += 10; insp.classList.remove('invalid-glow'); } else missing.push("Inspector Name");
+    if(client.value.trim().length > 1) { score += 10; client.classList.remove('invalid-glow'); } else missing.push("Client Name");
+    
+    if(state.points.length > 0) score += 20; else missing.push("Measurement (Add Point)");
+    
+    if(breaker.value > 0) { score += 15; breaker.classList.remove('invalid-glow'); } else missing.push("Main Breaker Size");
+    if(volt.value.trim().length > 1) { score += 10; volt.classList.remove('invalid-glow'); } else missing.push("Voltage Reading");
+    
+    if(state.hasSketched) score += 15; else missing.push("Cable Sketch");
+    if(state.hasSigned) score += 10; else missing.push("Signature");
+
+    // UI Updates
     document.getElementById('progress-bar').style.width = score + "%";
     document.getElementById('progress-percentage').innerText = score + "%";
     
-    const stepText = document.getElementById('progress-step-name');
     const submitBtn = document.getElementById('submitBtn');
+    const errorNote = document.getElementById('errorNote');
+    const stepText = document.getElementById('progress-step-name');
 
-    if(score < 30) stepText.innerText = "Step 1: Header Info";
-    else if(score < 50) stepText.innerText = "Step 2: Measurement";
-    else if(score < 75) stepText.innerText = "Step 3: Electrical Audit";
-    else if(score < 100) stepText.innerText = "Step 4: Finalize";
-    else stepText.innerText = "Ready to Submit!";
+    if(score === 100) {
+        submitBtn.style.background = "var(--good)";
+        errorNote.innerHTML = "✅ Everything filled. Ready to submit!";
+        errorNote.style.color = "var(--good)";
+        stepText.innerText = "Form Ready!";
+    } else {
+        submitBtn.style.background = "#334155";
+        errorNote.innerHTML = "⚠️ Missing: " + missing[0] + (missing.length > 1 ? " and more..." : "");
+        errorNote.style.color = "var(--danger)";
+        stepText.innerText = "Step: " + missing[0];
+    }
+    
+    return { score, missing };
+}
 
-    submitBtn.disabled = (score < 100);
+async function submitFullForm() {
+    const val = updateProgress();
+    
+    if(val.score < 100) {
+        // Trigger Visual Cues
+        const ids = ['site_id', 'inspector_name', 'client_name', 'main_breaker', 'v_l1_n'];
+        ids.forEach(id => {
+            const el = document.getElementById(id);
+            if(!el.value.trim() || el.value == 0) el.classList.add('invalid-glow');
+        });
+        
+        // QoL Alert
+        alert("📋 CANNOT SUBMIT YET\n\nProgress is at " + val.score + "%. Please complete:\n• " + val.missing.join("\n• "));
+        return;
+    }
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true; btn.innerText = "UPLOADING...";
+
+    const payload = {
+        timestamp: new Date().toISOString(),
+        client_company: document.getElementById('client_company').value,
+        site_id: document.getElementById('site_id').value,
+        project_ref: document.getElementById('project_ref').value,
+        inspector_name: document.getElementById('inspector_name').value,
+        sla_date: document.getElementById('sla_date').value,
+        client_name: document.getElementById('client_name').value,
+        address: document.getElementById('address').value,
+        contact_person: document.getElementById('contact_person').value,
+        contact_details: document.getElementById('contact_details').value,
+        project_category: document.getElementById('project_category').value,
+        charger_type: document.getElementById('charger_type').value,
+        charger_qty: document.getElementById('charger_qty').value,
+        main_breaker: document.getElementById('main_breaker').value,
+        v_l1_n: document.getElementById('v_l1_n').value,
+        v_l2_n: document.getElementById('v_l2_n').value,
+        v_l3_n: document.getElementById('v_l3_n').value,
+        i_l1: document.getElementById('i_l1').value,
+        i_l2: document.getElementById('i_l2').value,
+        i_l3: document.getElementById('i_l3').value,
+        floor_m: document.getElementById('floorM').innerText,
+        vertical_m: (BASE_VERT + state.vAdds*2.5).toFixed(2),
+        final_m: document.getElementById('finalM').innerText,
+        design_recommendation: document.getElementById('recommendation').value,
+        sketch_existing: document.getElementById('sketch1').toDataURL(),
+        signature: document.getElementById('signature').toDataURL()
+    };
+    
+    fetch(APPS_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) })
+    .then(() => { alert("SUCCESS: Data sent to Sheet."); location.reload(); })
+    .catch(() => { alert("CONNECTION ERROR: Please retry."); btn.disabled = false; btn.innerText = "RETRY SUBMISSION"; });
 }
 
 /** TRACKER LOGIC **/
@@ -244,7 +319,7 @@ async function initSensors() {
           window.addEventListener('deviceorientation', handleOri);
       }
       document.getElementById('btnEnable').style.display = "none";
-    } catch(e) { alert("Enable camera in settings."); }
+    } catch(e) { alert("Please enable sensors in browser settings."); }
 }
 
 function handleOri(e) {
@@ -261,7 +336,7 @@ function updateTrackerUI() {
     const btn = document.getElementById('btnAddPoint');
     fill.style.width = (p/90*100)+'%';
     fill.className = isOk ? 'coach-fill' : 'coach-fill bad';
-    text.innerText = isOk ? "Aim at floor and Add Point" : "Adjust angle (15°-75°)";
+    text.innerText = isOk ? "Perfect. Aim at floor and tap Add Point." : "Adjust phone angle (15°-75°)";
     text.style.color = isOk ? "var(--good)" : "var(--danger)";
     btn.disabled = !isOk;
     const floor = state.segments.reduce((a,b)=>a+b, 0);
@@ -316,51 +391,6 @@ function clearCanvas(id) {
   updateProgress();
 }
 initCanvas('sketch1'); initCanvas('signature');
-
-/** SUBMISSION **/
-async function submitFullForm() {
-    const btn = document.getElementById('submitBtn');
-    btn.disabled = true; btn.innerText = "UPLOADING...";
-
-    const payload = {
-        timestamp: new Date().toISOString(),
-        client_company: document.getElementById('client_company').value,
-        site_id: document.getElementById('site_id').value,
-        project_ref: document.getElementById('project_ref').value,
-        inspector_name: document.getElementById('inspector_name').value,
-        sla_date: document.getElementById('sla_date').value,
-        client_name: document.getElementById('client_name').value,
-        address: document.getElementById('address').value,
-        contact_person: document.getElementById('contact_person').value,
-        contact_details: document.getElementById('contact_details').value,
-        project_category: document.getElementById('project_category').value,
-        charger_type: document.getElementById('charger_type').value,
-        charger_model: "", // Empty for manual fill
-        charger_qty: document.getElementById('charger_qty').value,
-        system_voltage: "",
-        main_breaker: document.getElementById('main_breaker').value,
-        spare_breaker: document.getElementById('spare_breaker').value,
-        busbar_space: document.getElementById('busbar_space').value,
-        conduit_type: "",
-        v_l1_l2: "", v_l2_l3: "", v_l3_l1: "",
-        v_l1_n: document.getElementById('v_l1_n').value,
-        v_l2_n: document.getElementById('v_l2_n').value,
-        v_l3_n: document.getElementById('v_l3_n').value,
-        i_l1: document.getElementById('i_l1').value,
-        i_l2: document.getElementById('i_l2').value,
-        i_l3: document.getElementById('i_l3').value,
-        floor_m: document.getElementById('floorM').innerText,
-        vertical_m: (BASE_VERT + state.vAdds*2.5).toFixed(2),
-        final_m: document.getElementById('finalM').innerText,
-        design_recommendation: document.getElementById('recommendation').value,
-        sketch_existing: document.getElementById('sketch1').toDataURL(),
-        signature: document.getElementById('signature').toDataURL()
-    };
-    
-    fetch(APPS_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) })
-    .then(() => { alert("SUCCESS: Saved to Cloud."); location.reload(); })
-    .catch(() => { alert("FAILED: Check Connection."); btn.disabled = false; btn.innerText = "RETRY"; });
-}
 </script>
 </body>
 </html>
