@@ -151,25 +151,68 @@
 
   <div class="section" id="sec-4">
     <h2><span class="step-badge">4</span>Electrical Checklist</h2>
+    
     <div class="row">
-      <div><label>Charger Type</label><select id="charger_type"><option>AC</option><option>DC</option></select></div>
-      <div><label>Qty</label><input type="number" id="charger_qty" value="1"></div>
+      <div>
+        <label>Charger Type</label>
+        <select id="charger_type"><option>AC</option><option>DC</option></select>
+      </div>
+      <div>
+        <label>Charger Model</label>
+        <input id="charger_model" placeholder="e.g. Wallbox Pulse" oninput="updateProgress()">
+      </div>
     </div>
+
+    <div class="row">
+      <div>
+        <label>Qty</label>
+        <input type="number" id="charger_qty" value="1">
+      </div>
+      <div>
+        <label>System Voltage</label>
+        <select id="system_voltage">
+          <option>230V Single Phase</option>
+          <option>400V Three Phase</option>
+          <option>208V Three Phase</option>
+        </select>
+      </div>
+    </div>
+
     <label>Main Breaker Size (Amps)</label>
     <input type="number" id="main_breaker" placeholder="e.g. 60" oninput="updateProgress()">
     
-    <label>Voltage Readings (V)</label>
     <div class="row">
-      <div><label>L1-N</label><input id="v_l1_n" oninput="updateProgress()"></div>
-      <div><label>L2-N</label><input id="v_l2_n" oninput="updateProgress()"></div>
-      <div><label>L3-N</label><input id="v_l3_n" oninput="updateProgress()"></div>
+      <div><label>Spare Breaker?</label><select id="spare_breaker"><option>None</option><option>Yes</option></select></div>
+      <div><label>Busbar Space?</label><select id="busbar_space"><option>None</option><option>Yes</option></select></div>
+    </div>
+
+    <label>Conduit Type Recommendation</label>
+    <select id="conduit_type">
+      <option>uPVC (Orange)</option>
+      <option>IMC (Rigid Steel)</option>
+      <option>EMT (Thin-wall Steel)</option>
+      <option>Flexible Metal Conduit</option>
+    </select>
+
+    <label>Voltage: Phase-to-Phase (V)</label>
+    <div class="row">
+      <div><label>L1-L2</label><input id="v_l1_l2" placeholder="0"></div>
+      <div><label>L2-L3</label><input id="v_l2_l3" placeholder="0"></div>
+      <div><label>L3-L1</label><input id="v_l3_l1" placeholder="0"></div>
+    </div>
+
+    <label>Voltage: Phase-to-Neutral (V)</label>
+    <div class="row">
+      <div><label>L1-N</label><input id="v_l1_n" placeholder="230" oninput="updateProgress()"></div>
+      <div><label>L2-N</label><input id="v_l2_n" placeholder="0"></div>
+      <div><label>L3-N</label><input id="v_l3_n" placeholder="0"></div>
     </div>
     
     <label>Current Readings (A)</label>
     <div class="row">
-      <div><label>L1</label><input id="i_l1" oninput="updateProgress()"></div>
-      <div><label>L2</label><input id="i_l2" oninput="updateProgress()"></div>
-      <div><label>L3</label><input id="i_l3" oninput="updateProgress()"></div>
+      <div><label>L1</label><input id="i_l1" placeholder="0"></div>
+      <div><label>L2</label><input id="i_l2" placeholder="0"></div>
+      <div><label>L3</label><input id="i_l3" placeholder="0"></div>
     </div>
   </div>
 
@@ -285,15 +328,29 @@ async function submitFullForm() {
         contact_person: document.getElementById('contact_person').value,
         contact_details: document.getElementById('contact_details').value,
         project_category: document.getElementById('project_category').value,
+        
+        // --- NEWLY MAPPED FIELDS ---
         charger_type: document.getElementById('charger_type').value,
+        charger_model: document.getElementById('charger_model').value,
         charger_qty: document.getElementById('charger_qty').value,
+        system_voltage: document.getElementById('system_voltage').value,
         main_breaker: document.getElementById('main_breaker').value,
+        spare_breaker: document.getElementById('spare_breaker').value,
+        busbar_space: document.getElementById('busbar_space').value,
+        conduit_type: document.getElementById('conduit_type').value,
+        
+        v_l1_l2: document.getElementById('v_l1_l2').value,
+        v_l2_l3: document.getElementById('v_l2_l3').value,
+        v_l3_l1: document.getElementById('v_l3_l1').value,
+        
         v_l1_n: document.getElementById('v_l1_n').value,
         v_l2_n: document.getElementById('v_l2_n').value,
         v_l3_n: document.getElementById('v_l3_n').value,
         i_l1: document.getElementById('i_l1').value,
         i_l2: document.getElementById('i_l2').value,
         i_l3: document.getElementById('i_l3').value,
+        
+        // --- MEASUREMENTS & VISUALS ---
         floor_m: document.getElementById('floorM').innerText,
         vertical_m: (BASE_VERT + state.vAdds*2.5).toFixed(2),
         final_m: document.getElementById('finalM').innerText,
